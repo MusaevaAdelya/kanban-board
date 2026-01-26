@@ -61,13 +61,24 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_#000] p-6">
+    <div class="flex flex-col gap-6">
       @if (selectedProject(); as project) {
-        <h2 class="text-2xl font-bold">
-          {{ project.title }}
-        </h2>
+        <div
+          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] px-8 py-6 flex-1 overflow-auto"
+        >
+          <app-board-header
+            [title]="project.title"
+            [owner]="project.owner"
+            [collaborators]="mockCollaborators()"
+            (inviteClicked)="handleInvite()"
+          />
+        </div>
       } @else {
-        <p class="text-text-secondary">Select a project to get started</p>
+        <div
+          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] p-6 flex-1 flex items-center justify-center"
+        >
+          <p class="text-text-secondary text-xl">Select a project to get started</p>
+        </div>
       }
     </div>
   </div>

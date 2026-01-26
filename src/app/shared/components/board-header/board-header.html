@@ -1,0 +1,42 @@
+<div class="bg-neon-leaf border-2 border-secondary shadow-[7px_7px_0_0_var(--color-shadow)] px-6 py-8">
+  <div class="flex items-center justify-between gap-8">
+    <!-- Left Section: Title and Owner -->
+    <div class="flex flex-col gap-1">
+      <p class="text-sm text-text-secondary">
+        Made with <span class="text-scarlet-rush text-base">❤️</span> by Adelya Musaeva
+      </p>
+      <h1 class="text-4xl font-bold text-text-primary">{{ title() }}</h1>
+    </div>
+
+    <!-- Right Section: Collaborators and Invite Button -->
+    <div class="flex items-center gap-6">
+      <!-- Collaborators Avatars Stack -->
+      @if (collaborators().length > 0) {
+        <div class="flex items-center">
+          @for (collaborator of collaborators().slice(0, 4); track collaborator.id; let i = $index) {
+            <img
+              [src]="collaborator.photoURL"
+              [alt]="collaborator.displayName"
+              [title]="collaborator.displayName"
+              [class]="'w-10 h-10 rounded-full border-2 border-secondary object-cover bg-primary transition-transform hover:scale-110 hover:-translate-y-1 hover:z-10 ' + (i > 0 ? '-ml-3' : '')"
+            />
+          }
+          @if (collaborators().length > 4) {
+            <div class="w-10 h-10 rounded-full border-2 border-secondary bg-sky-mint flex items-center justify-center text-lg  -ml-3">
+              +{{ collaborators().length - 4 }}
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Invite Button -->
+      <button
+        class="flex items-center gap-2 px-6 py-3 bg-accent border-2 border-secondary rounded shadow-[5px_5px_0_0_var(--color-secondary)] text-lg transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_var(--color-secondary)] active:translate-x-1.25 active:translate-y-1.25 active:shadow-none cursor-pointer"
+        (click)="inviteClicked.emit()"
+      >
+        <ng-icon name="heroUserPlusSolid" size="1.5rem"></ng-icon>
+        <span>Invite People</span>
+      </button>
+    </div>
+  </div>
+</div>

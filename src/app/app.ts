@@ -7,10 +7,18 @@ import { ProjectItem } from './shared/components/project-item/project-item';
 import { UserProfile } from './shared/components/user-profile/user-profile';
 import { LoginButton } from './shared/components/login-button/login-button';
 import { AuthService } from './core/services/auth.service';
+import { BoardHeader } from './shared/components/board-header/board-header';
 
 interface Project {
   id: string;
   title: string;
+  owner: string;
+}
+
+interface Collaborator {
+  id: string;
+  photoURL: string;
+  displayName: string;
 }
 
 @Component({
@@ -19,12 +27,12 @@ interface Project {
   templateUrl: './app.html',
   styleUrl: './app.scss',
   imports: [
-    NgIcon,
     Card,
     Button,
     ProjectItem,
     UserProfile,
-    LoginButton
+    LoginButton,
+    BoardHeader
   ],
   providers: [provideIcons({ heroPlus })]
 })
@@ -34,9 +42,18 @@ export class App {
   protected readonly title = signal('kanban-board');
 
   projects = signal<Project[]>([
-    { id: '1', title: 'Health Web App' },
-    { id: '2', title: 'Education Web App' },
-    { id: '3', title: 'Finance Mobile App' }
+    { id: '1', title: 'Health Web App', owner: 'Adelya Musaeva' },
+    { id: '2', title: 'Education Web App', owner: 'Adelya Musaeva' },
+    { id: '3', title: 'Finance Mobile App', owner: 'Adelya Musaeva' }
+  ]);
+
+  // Mock collaborators data
+  mockCollaborators = signal<Collaborator[]>([
+    { id: '1', photoURL: 'https://i.pravatar.cc/150?img=1', displayName: 'Alice Johnson' },
+    { id: '2', photoURL: 'https://i.pravatar.cc/150?img=2', displayName: 'Bob Smith' },
+    { id: '3', photoURL: 'https://i.pravatar.cc/150?img=3', displayName: 'Carol White' },
+    { id: '4', photoURL: 'https://i.pravatar.cc/150?img=4', displayName: 'David Brown' },
+    { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' }
   ]);
 
   selectedProjectId = signal<string | null>('1');
@@ -62,6 +79,11 @@ export class App {
   generateTestData() {
     console.log('Generate test data');
     // TODO: Реализовать позже
+  }
+
+  handleInvite() {
+    console.log('Invite people clicked');
+    // TODO: Открыть модалку с инвайтом
   }
 
   async handleLogin() {
