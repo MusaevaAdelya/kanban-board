@@ -1,0 +1,9 @@
+<app-card
+  [variant]="isSelected() ? 'selected' : 'default'"
+  [clickable]="true"
+  (clicked)="projectClicked.emit()"
+>
+  <div class="flex items-center justify-between">
+    <span [class]="textClass()">{{ title() }}</span>
+  </div>
+</app-card>

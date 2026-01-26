@@ -1,6 +1,74 @@
+<main class="polka-dot-background bg-accent h-screen p-10">
+  <div class="h-full grid grid-cols-[20rem_1fr] gap-8">
+    <!-- Sidebar -->
+    <div class="flex flex-col">
+      <!-- Logo Header -->
+      <app-card>
+        <div class="flex items-center font-bold text-2xl gap-3">
+          <img src="logo.svg" alt="logo" class="h-14" />
+          Kanban Boards
+        </div>
+      </app-card>
 
-<main class="main">
+      <!-- Projects Section -->
+      <div class="mt-10 flex flex-col gap-3 flex-1">
+        <!-- Projects Header -->
+        <app-card>
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-bold">Projects</span>
+            <app-button
+              variant="accent"
+              size="md"
+              icon="heroPlus"
+              [iconOnly]="true"
+              (clicked)="addProject()"
+            />
+          </div>
+        </app-card>
 
+        <!-- Projects List -->
+        @for (project of projects(); track project.id) {
+          <app-project-item
+            [title]="project.title"
+            [isSelected]="isProjectSelected(project.id)"
+            (projectClicked)="selectProject(project.id)"
+          />
+        }
+      </div>
+
+      <!-- Bottom Section -->
+      <div class="mt-auto flex flex-col gap-3">
+        <!-- Test Data Button -->
+        <app-card [clickable]="true" (clicked)="generateTestData()">
+          <div class="flex items-center justify-center gap-3 text-xl">
+            <span class="font-bold">Generate Test Data</span>
+            <span class="text-2xl">🎲</span>
+          </div>
+        </app-card>
+
+        <!-- User Profile / Login -->
+        @if (isLoggedIn() && currentUser(); as user) {
+          <app-user-profile
+            [displayName]="user.displayName || 'User'"
+            [email]="user.email"
+            [photoURL]="user.photoURL || 'profile-pic-demo.jpg'"
+            (logout)="handleLogout()"
+          />
+        } @else {
+          <app-login-button (login)="handleLogin()" />
+        }
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_#000] p-6">
+      @if (selectedProject(); as project) {
+        <h2 class="text-2xl font-bold">
+          {{ project.title }}
+        </h2>
+      } @else {
+        <p class="text-text-secondary">Select a project to get started</p>
+      }
+    </div>
+  </div>
 </main>
-
-<router-outlet />

@@ -1,0 +1,9 @@
+<button [class]="buttonClasses()" (click)="clicked.emit()" [disabled]="disabled()">
+  @if (icon()) {
+    <ng-icon [name]="icon()!" [size]="iconSize()" />
+  }
+  @if (label()) {
+    <span>{{ label() }}</span>
+  }
+  <ng-content></ng-content>
+</button>

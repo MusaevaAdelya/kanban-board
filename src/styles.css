@@ -1,13 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Arvo:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
 @import "tailwindcss";
 
 @theme {
   --color-primary: #FFF1E8;
   --color-secondary: #000000;
   --color-accent: #FFDC02;
-  --color-text-primary: #271F18;
+  --color-text-primary: #000000;
   --color-text-secondary: #413B37;
+  --color-text-white: #fff;
   --color-sky-mint: #72CDDA;
   --color-neon-leaf: #DCF45F;
   --color-scarlet-rush: #F34430;
 }
 
+body{
+  font-family: "Arvo", serif;
+  color: var(--color-text-primary);
+}

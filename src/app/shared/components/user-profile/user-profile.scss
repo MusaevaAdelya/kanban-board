@@ -1,0 +1,10 @@
+.icon-wrapper {
+  ng-icon {
+    color: var(--color-text-primary);
+    transition: color 200ms;
+  }
+  
+  &:hover ng-icon {
+    color: #dc2626;
+  }
+}
