@@ -11,6 +11,7 @@ import { BoardHeader } from './shared/components/board-header/board-header';
 import { Column } from './shared/components/column/column';
 import { AddColumnButton } from './shared/components/add-column-button/add-column-button';
 import { DragScrollDirective } from "./shared/directives/drag-scroll.directive";
+import { CdkDropListGroup } from '@angular/cdk/drag-drop';
 
 interface Project {
   id: string;
@@ -63,7 +64,8 @@ interface BoardColumn {
     BoardHeader,
     Column,
     AddColumnButton,
-    DragScrollDirective
+    DragScrollDirective,
+    CdkDropListGroup
   ],
   providers: [provideIcons({ heroPlus })]
 })
@@ -86,7 +88,6 @@ export class App {
     { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' }
   ]);
 
-  // Mock board data
   mockColumns = signal<BoardColumn[]>([
     {
       id: '1',
@@ -245,8 +246,27 @@ export class App {
     console.log('Column menu clicked:', columnId);
   }
 
-  handleAddCard(columnId: string) {
-    console.log('Add card to column:', columnId);
+  handleAddCard(columnId: string, cardTitle: string) {
+    const columns = this.mockColumns();
+    const columnIndex = columns.findIndex(col => col.id === columnId);
+    
+    if (columnIndex !== -1) {
+      const newCard: KanbanCard = {
+        id: `card-${Date.now()}`,
+        title: cardTitle,
+        labels: [],
+        commentsCount: 0,
+        attachmentsCount: 0
+      };
+      
+      const updatedColumns = [...columns];
+      updatedColumns[columnIndex] = {
+        ...updatedColumns[columnIndex],
+        cards: [...updatedColumns[columnIndex].cards, newCard]
+      };
+      
+      this.mockColumns.set(updatedColumns);
+    }
   }
 
   handleCardClick(cardId: string) {
@@ -254,7 +274,28 @@ export class App {
   }
 
   handleAddColumn() {
-    console.log('Add new column');
+    const newColumn: BoardColumn = {
+      id: `column-${Date.now()}`,
+      title: 'New Column',
+      color: 'bg-sky-mint',
+      cards: []
+    };
+    
+    this.mockColumns.update(columns => [...columns, newColumn]);
+  }
+
+  handleCardDrop(event: { previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }) {
+    const columns = this.mockColumns();
+    const previousColumnIndex = columns.findIndex(col => col.id === event.previousColumnId);
+    const currentColumnIndex = columns.findIndex(col => col.id === event.currentColumnId);
+    
+    if (previousColumnIndex === -1 || currentColumnIndex === -1) return;
+    
+    const updatedColumns = [...columns];
+    const [movedCard] = updatedColumns[previousColumnIndex].cards.splice(event.previousIndex, 1);
+    updatedColumns[currentColumnIndex].cards.splice(event.currentIndex, 0, movedCard);
+    
+    this.mockColumns.set(updatedColumns);
   }
 
   async handleLogin() {

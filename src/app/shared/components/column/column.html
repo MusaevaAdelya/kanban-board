@@ -13,30 +13,45 @@
   </div>
 
   <!-- Cards List -->
-  <div class="flex flex-col gap-3 pr-1">
+  <div 
+    class="flex flex-col gap-3 pr-1 min-h-24"
+    cdkDropList
+    [id]="columnId()"
+    [cdkDropListData]="cards()"
+    (cdkDropListDropped)="onDrop($event)"
+  >
     @for (card of cards(); track card.id) {
-      <app-kanban-card
-        [title]="card.title"
-        [labels]="card.labels"
-        [assignee]="card.assignee"
-        [commentsCount]="card.commentsCount"
-        [attachmentsCount]="card.attachmentsCount"
-        (clicked)="cardClicked.emit(card.id)"
-      />
+      <div cdkDrag>
+        <app-kanban-card
+          [title]="card.title"
+          [labels]="card.labels"
+          [assignee]="card.assignee"
+          [commentsCount]="card.commentsCount"
+          [attachmentsCount]="card.attachmentsCount"
+          (clicked)="cardClicked.emit(card.id)"
+        />
+      </div>
     }
 
     <!-- Add Card Button -->
     @if (isAddingCard()) {
       <div>
-        <textarea name="" id="" rows="5" placeholder="Card title" class="w-full resize-none p-3 border-2 border-secondary rounded-sm mb-2 mt-3"></textarea>
+        <textarea 
+          rows="5" 
+          placeholder="Card title" 
+          class="w-full resize-none p-3 border-2 border-secondary rounded-sm mb-2 mt-3"
+          [(ngModel)]="newCardTitle"
+          (keydown.enter)="$event.preventDefault(); handleAddCard()"
+          (keydown.escape)="cancelAddCard()"
+        ></textarea>
         <div class="flex items-center gap-3">
           <button
             class="w-full bg-accent border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] py-2 text-lg hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] transition-all cursor-pointer"
-            (click)="isAddingCard.set(false)"
+            (click)="handleAddCard()"
           >
             Add Card
           </button>
-          <div class="rounded-full w-11 h-10 bg-scarlet-rush flex items-center justify-center cursor-pointer" (click)="isAddingCard.set(false)">
+          <div class="rounded-full w-11 h-10 bg-scarlet-rush flex items-center justify-center cursor-pointer" (click)="cancelAddCard()">
             <ng-icon name="heroXMark" size="1.5rem" color="white"></ng-icon>
           </div>
         </div>
