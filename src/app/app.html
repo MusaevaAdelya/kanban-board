@@ -1,5 +1,5 @@
-<main class="polka-dot-background bg-accent h-screen p-10">
-  <div class="h-full grid grid-cols-[20rem_1fr] gap-8">
+<main class="min-h-screen p-10 w-full">
+  <div class="h-full grid grid-cols-[20rem_1fr] gap-8 w-full">
     <!-- Sidebar -->
     <div class="flex flex-col">
       <!-- Logo Header -->
@@ -61,10 +61,10 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6 w-full min-w-0">
       @if (selectedProject(); as project) {
         <div
-          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] px-8 py-6 flex-1 overflow-auto"
+          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] px-8 py-6 flex flex-col min-h-0"
         >
           <app-board-header
             [title]="project.title"
@@ -72,6 +72,22 @@
             [collaborators]="mockCollaborators()"
             (inviteClicked)="handleInvite()"
           />
+
+          <div class="flex gap-6 mt-6 overflow-x-auto min-w-0 pb-10" appDragScroll>
+            @for (column of mockColumns(); track column.id) {
+              <app-column
+                [title]="column.title"
+                [color]="column.color"
+                [cards]="column.cards"
+                (menuClicked)="handleColumnMenu(column.id)"
+                (addCardClicked)="handleAddCard(column.id)"
+                (cardClicked)="handleCardClick($event)"
+              />
+            }
+
+            <!-- Add Column Button -->
+            <app-add-column-button (clicked)="handleAddColumn()" />
+          </div>
         </div>
       } @else {
         <div
