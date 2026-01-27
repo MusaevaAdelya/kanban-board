@@ -273,16 +273,16 @@ export class App {
     console.log('Card clicked:', cardId);
   }
 
-  handleAddColumn() {
-    const newColumn: BoardColumn = {
-      id: `column-${Date.now()}`,
-      title: 'New Column',
-      color: 'bg-sky-mint',
-      cards: []
-    };
-    
-    this.mockColumns.update(columns => [...columns, newColumn]);
-  }
+  handleAddColumn(columnTitle: string) {
+  const newColumn: BoardColumn = {
+    id: `column-${Date.now()}`,
+    title: columnTitle || 'New Column',
+    color: 'bg-scarlet-rush',
+    cards: []
+  };
+  
+  this.mockColumns.update(columns => [...columns, newColumn]);
+}
 
   handleCardDrop(event: { previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }) {
     const columns = this.mockColumns();
