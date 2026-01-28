@@ -1,17 +1,39 @@
-<main class="h-screen p-10 w-full">
-  <div class="h-full grid grid-cols-[20rem_1fr] gap-8 w-full">
-    <!-- Sidebar -->
-    <app-sidebar
-      (generateTestDataClicked)="generateTestData()"
-      (login)="handleLogin()"
-      (logout)="handleLogout()"
-    />
+<main class="p-4 md:p-10 w-full ">
+  <div class="min-h-[80vh] flex flex-col lg:grid lg:grid-cols-[20rem_1fr] gap-4 md:gap-8 w-full">
+    <!-- Mobile Menu Toggle -->
+    <button
+      class="lg:hidden fixed top-4 left-4 z-50 bg-scarlet-rush border-2 border-secondary rounded-full p-3 flex items-center"
+      (click)="toggleMobileSidebar()"
+    >
+      <ng-icon [name]="isMobileSidebarOpen() ? 'heroXMark' : 'heroBars3'" size="1.5rem"></ng-icon>
+    </button>
+
+    <!-- Sidebar - скрыт на мобильных, показывается через оверлей -->
+    <div
+      [class]="'fixed lg:relative inset-0 z-40 transition-transform duration-300 lg:translate-x-0 ' + (isMobileSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
+    >
+      <!-- Overlay для мобильных -->
+      <div
+        class="lg:hidden fixed inset-0 bg-black/50"
+        (click)="toggleMobileSidebar()"
+        [class.hidden]="!isMobileSidebarOpen()"
+      ></div>
+
+      <!-- Sidebar контент -->
+      <div class="relative h-full w-80 lg:w-full bg-primary lg:bg-transparent p-4 lg:p-0 overflow-y-auto">
+        <app-sidebar
+          (generateTestDataClicked)="generateTestData()"
+          (login)="handleLogin()"
+          (logout)="handleLogout()"
+        />
+      </div>
+    </div>
 
     <!-- Main Content Area -->
-    <div class="flex flex-col gap-6 w-full min-w-0 bg-amber-600">
+    <div class="flex flex-col gap-4 md:gap-6 w-full min-w-0 mt-16 lg:mt-0 min-h-[75vh]">
       @if (selectedProject(); as project) {
         <div
-          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] px-8 py-6 flex flex-col min-h-0 h-full"
+          class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] px-4 md:px-8 py-4 md:py-6 flex flex-col min-h-0 h-full"
         >
           <app-board-header
             [title]="project.title"
@@ -21,7 +43,7 @@
           />
 
           <div
-            class="flex gap-6 mt-6 overflow-x-auto min-w-0 pb-10 columns-container h-full"
+            class="flex min-h-[70vh] gap-4 md:gap-6 mt-4 md:mt-6 overflow-x-auto min-w-0 pb-6 md:pb-10 columns-container h-full"
             appDragScroll
             cdkDropListGroup
           >
@@ -44,12 +66,13 @@
         </div>
       } @else {
         <div
-          class="bg-primary border-2 border-secondary rounded-lg shadow-[7px_7px_0_0_var(--color-shadow)] p-6 flex-1 flex items-center justify-center"
+          class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center"
         >
-          <p class="text-text-secondary text-xl">Select a project to get started</p>
+          <p class="text-text-secondary text-lg md:text-xl text-center">Select a project to get started</p>
         </div>
       }
     </div>
+
     <!-- Card Modal -->
     @if (selectedCardId() && selectedColumnId()) {
       <app-card-modal

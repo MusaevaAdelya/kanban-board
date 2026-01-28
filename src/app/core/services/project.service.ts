@@ -21,6 +21,12 @@ export class ProjectService {
 
   private selectedProjectId = signal<string | null>('1');
 
+  isMobileSidebarOpen = signal(false);
+
+  toggleMobileSidebar(): void {
+    this.isMobileSidebarOpen.update(value => !value);
+  }
+
   readonly allProjects = this.projects.asReadonly();
   readonly currentProjectId = this.selectedProjectId.asReadonly();
 
@@ -31,6 +37,7 @@ export class ProjectService {
 
   selectProject(projectId: string): void {
     this.selectedProjectId.set(projectId);
+    this.isMobileSidebarOpen.set(false);
   }
 
   addProject(title: string): void {

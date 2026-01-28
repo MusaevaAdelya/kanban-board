@@ -1,6 +1,6 @@
 import { Component, signal, inject } from '@angular/core';
-import { provideIcons } from '@ng-icons/core';
-import { heroPlus } from '@ng-icons/heroicons/outline';
+import { provideIcons, NgIcon } from '@ng-icons/core';
+import { heroPlus, heroBars3, heroXMark } from '@ng-icons/heroicons/outline';
 import { AuthService } from './core/services/auth.service';
 import { BoardHeader } from './shared/components/board-header/board-header';
 import { Column } from './shared/components/column/column';
@@ -30,9 +30,10 @@ interface Collaborator {
     DragScrollDirective,
     CdkDropListGroup,
     CardModal,
-    Sidebar
+    Sidebar,
+    NgIcon
   ],
-  providers: [provideIcons({ heroPlus })],
+  providers: [provideIcons({ heroPlus, heroBars3, heroXMark })],
 })
 export class App {
   private authService = inject(AuthService);
@@ -46,6 +47,12 @@ export class App {
     { id: '4', photoURL: 'https://i.pravatar.cc/150?img=4', displayName: 'David Brown' },
     { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' },
   ]);
+
+  isMobileSidebarOpen = this.projectService.isMobileSidebarOpen;
+
+  toggleMobileSidebar(): void {
+    this.projectService.toggleMobileSidebar()
+  }
 
   mockColumns = this.kanbanService.allColumns;
   selectedProject = this.projectService.selectedProject;

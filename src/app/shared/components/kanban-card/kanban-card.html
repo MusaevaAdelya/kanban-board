@@ -1,23 +1,18 @@
 <div
-  class="bg-primary border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] p-4 cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] transition-all w-full"
-  
+  class="bg-primary border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] p-3 md:p-4 cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] transition-all w-full"
 >
   <div class="flex justify-end">
-    <div class="transition-colors hover:text-white flex items-center hover:bg-scarlet-rush" (click)="delete.emit()">
-
-      <ng-icon
-      name="heroXMark"
-      size="1.25rem"
-      ></ng-icon>
+    <div class="transition-colors hover:text-white flex items-center hover:bg-scarlet-rush rounded p-1" (click)="delete.emit()">
+      <ng-icon name="heroXMark" size="1rem" class="md:text-xl"></ng-icon>
     </div>
   </div>
   <div (click)="clicked.emit()">
     <!-- Labels -->
     @if (labels().length > 0) {
-      <div class="flex flex-wrap gap-2 mb-3">
+      <div class="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
         @for (label of labels(); track label.id) {
           <span
-            class="px-3 py-0.5 rounded border border-secondary text-sm"
+            class="px-2 md:px-3 py-0.5 rounded border border-secondary text-xs md:text-sm"
             [style.background-color]="label.color"
           >
             {{ label.name }}
@@ -27,7 +22,7 @@
     }
 
     <!-- Title -->
-    <h4 class="flex-1 text-base font-normal text-text-primary mb-8">{{ title() }}</h4>
+    <h4 class="flex-1 text-sm md:text-base font-normal text-text-primary mb-6 md:mb-8">{{ title() }}</h4>
 
     <!-- Footer -->
     <div class="flex items-center justify-between">
@@ -38,33 +33,33 @@
             [src]="user.photoURL"
             [alt]="user.displayName"
             [title]="user.displayName"
-            class="w-8 h-8 rounded-full border border-secondary object-cover bg-neon-leaf"
+            class="w-7 h-7 md:w-8 md:h-8 rounded-full border border-secondary object-cover bg-neon-leaf"
           />
         } @else {
           <div
-            class="w-8 h-8 rounded-full border border-secondary bg-neon-leaf flex items-center justify-center"
+            class="w-7 h-7 md:w-8 md:h-8 rounded-full border border-secondary bg-neon-leaf flex items-center justify-center"
           >
-            <ng-icon name="heroUser" size="1.25rem"></ng-icon>
+            <ng-icon name="heroUser" size="1rem" class="md:text-xl"></ng-icon>
           </div>
         }
       </div>
 
       <!-- Stats -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 md:gap-3">
         @if (commentsCount() > 0) {
           <div
-            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5"
+            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-1.5 md:px-2 py-0.5"
           >
-            <ng-icon name="heroChatBubbleLeftRight" size="1.1rem"></ng-icon>
-            <span class="text-sm">{{ commentsCount() }}</span>
+            <ng-icon name="heroChatBubbleLeftRight" size="1rem"></ng-icon>
+            <span class="text-xs md:text-sm">{{ commentsCount() }}</span>
           </div>
         }
         @if (attachmentsCount() > 0) {
           <div
-            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5"
+            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-1.5 md:px-2 py-0.5"
           >
-            <ng-icon name="heroPaperClip" size="1.1rem"></ng-icon>
-            <span class="text-sm">{{ attachmentsCount() }}</span>
+            <ng-icon name="heroPaperClip" size="1rem"></ng-icon>
+            <span class="text-xs md:text-sm">{{ attachmentsCount() }}</span>
           </div>
         }
       </div>
