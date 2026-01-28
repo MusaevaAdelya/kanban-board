@@ -1,56 +1,73 @@
-<div 
+<div
   class="bg-primary border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] p-4 cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] transition-all w-full"
-  (click)="clicked.emit()"
+  
 >
-  <!-- Labels -->
-  @if (labels().length > 0) {
-    <div class="flex flex-wrap gap-2 mb-3">
-      @for (label of labels(); track label.id) {
-        <span 
-          class="px-3 py-0.5 rounded border border-secondary text-sm"
-          [style.background-color]="label.color"
-        >
-          {{ label.name }}
-        </span>
-      }
+  <div class="flex justify-end">
+    <div class="transition-colors hover:text-white flex items-center hover:bg-scarlet-rush" (click)="delete.emit()">
+
+      <ng-icon
+      name="heroXMark"
+      size="1.25rem"
+      ></ng-icon>
     </div>
-  }
+  </div>
+  <div (click)="clicked.emit()">
+    <!-- Labels -->
+    @if (labels().length > 0) {
+      <div class="flex flex-wrap gap-2 mb-3">
+        @for (label of labels(); track label.id) {
+          <span
+            class="px-3 py-0.5 rounded border border-secondary text-sm"
+            [style.background-color]="label.color"
+          >
+            {{ label.name }}
+          </span>
+        }
+      </div>
+    }
 
-  <!-- Title -->
-  <h4 class="text-base font-normal text-text-primary mb-8">{{ title() }}</h4>
+    <!-- Title -->
+    <h4 class="flex-1 text-base font-normal text-text-primary mb-8">{{ title() }}</h4>
 
-  <!-- Footer -->
-  <div class="flex items-center justify-between">
-    <!-- Assignee -->
-    <div class="flex items-center">
-      @if (assignee(); as user) {
-        <img
-          [src]="user.photoURL"
-          [alt]="user.displayName"
-          [title]="user.displayName"
-          class="w-8 h-8 rounded-full border border-secondary object-cover bg-neon-leaf"
-        />
-      } @else {
-        <div class="w-8 h-8 rounded-full border border-secondary bg-neon-leaf flex items-center justify-center">
-          <ng-icon name="heroUser" size="1.25rem"></ng-icon>
-        </div>
-      }
-    </div>
+    <!-- Footer -->
+    <div class="flex items-center justify-between">
+      <!-- Assignee -->
+      <div class="flex items-center">
+        @if (assignee(); as user) {
+          <img
+            [src]="user.photoURL"
+            [alt]="user.displayName"
+            [title]="user.displayName"
+            class="w-8 h-8 rounded-full border border-secondary object-cover bg-neon-leaf"
+          />
+        } @else {
+          <div
+            class="w-8 h-8 rounded-full border border-secondary bg-neon-leaf flex items-center justify-center"
+          >
+            <ng-icon name="heroUser" size="1.25rem"></ng-icon>
+          </div>
+        }
+      </div>
 
-    <!-- Stats -->
-    <div class="flex items-center gap-3">
-      @if (commentsCount() > 0) {
-        <div class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5">
-          <ng-icon name="heroChatBubbleLeftRight" size="1.1rem"></ng-icon>
-          <span class="text-sm">{{ commentsCount() }}</span>
-        </div>
-      }
-      @if (attachmentsCount() > 0) {
-        <div class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5">
-          <ng-icon name="heroPaperClip" size="1.1rem"></ng-icon>
-          <span class="text-sm">{{ attachmentsCount() }}</span>
-        </div>
-      }
+      <!-- Stats -->
+      <div class="flex items-center gap-3">
+        @if (commentsCount() > 0) {
+          <div
+            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5"
+          >
+            <ng-icon name="heroChatBubbleLeftRight" size="1.1rem"></ng-icon>
+            <span class="text-sm">{{ commentsCount() }}</span>
+          </div>
+        }
+        @if (attachmentsCount() > 0) {
+          <div
+            class="flex items-center gap-1 bg-neon-leaf border border-secondary rounded-sm px-2 py-0.5"
+          >
+            <ng-icon name="heroPaperClip" size="1.1rem"></ng-icon>
+            <span class="text-sm">{{ attachmentsCount() }}</span>
+          </div>
+        }
+      </div>
     </div>
   </div>
 </div>

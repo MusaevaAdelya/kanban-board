@@ -25,12 +25,14 @@
       @for (card of cards(); track card.id) {
         <div cdkDrag>
           <app-kanban-card
+            [cardId]="card.id"
             [title]="card.title"
             [labels]="card.labels"
             [assignee]="card.assignee"
             [commentsCount]="card.commentsCount"
             [attachmentsCount]="card.attachmentsCount"
             (clicked)="cardClicked.emit(card.id)"
+            (delete)="handleDeleteCard(card.id)"
           />
         </div>
       }

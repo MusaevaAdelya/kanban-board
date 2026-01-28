@@ -1,9 +1,10 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal,inject } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroEllipsisHorizontal, heroXMark } from '@ng-icons/heroicons/outline';
 import { KanbanCard } from '../kanban-card/kanban-card';
 import { CdkDropList, CdkDrag, moveItemInArray, transferArrayItem, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
+import { KanbanService } from '../../../core/services/kanban.service';
 
 interface Card {
   id: string;
@@ -43,6 +44,8 @@ export class Column {
   cardClicked = output<string>();
   cardDropped = output<{ previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }>();
 
+  private kanbanService = inject(KanbanService);
+
   onDrop(event: CdkDragDrop<Card[]>) {
     if (event.previousContainer === event.container) {
       // Перемещение внутри одной колонки
@@ -71,5 +74,9 @@ export class Column {
   cancelAddCard() {
     this.newCardTitle.set('');
     this.isAddingCard.set(false);
+  }
+
+  handleDeleteCard(cardId:string){
+    this.kanbanService.deleteCard(this.columnId(), cardId)
   }
 }

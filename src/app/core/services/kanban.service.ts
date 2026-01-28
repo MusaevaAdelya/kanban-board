@@ -235,4 +235,19 @@ export class KanbanService {
     const updatedColumns = columns.filter((col) => col.id !== columnId);
     this.columns.set(updatedColumns);
   }
+
+  deleteCard(columnId: string, cardId: string): void {
+    const columns = this.columns();
+    const columnIndex = columns.findIndex((col) => col.id === columnId);
+
+    if (columnIndex === -1) return;
+
+    const updatedColumns = [...columns];
+    updatedColumns[columnIndex] = {
+      ...updatedColumns[columnIndex],
+      cards: updatedColumns[columnIndex].cards.filter((card) => card.id !== cardId),
+    };
+
+    this.columns.set(updatedColumns);
+  }
 }
