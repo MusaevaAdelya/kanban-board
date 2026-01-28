@@ -10,8 +10,10 @@ import { AuthService } from './core/services/auth.service';
 import { BoardHeader } from './shared/components/board-header/board-header';
 import { Column } from './shared/components/column/column';
 import { AddColumnButton } from './shared/components/add-column-button/add-column-button';
-import { DragScrollDirective } from "./shared/directives/drag-scroll.directive";
+import { DragScrollDirective } from './shared/directives/drag-scroll.directive';
 import { CdkDropListGroup } from '@angular/cdk/drag-drop';
+import { CardModal } from './shared/components/card-modal/card-modal';
+import { KanbanService } from './core/services/kanban.service';
 
 interface Project {
   id: string;
@@ -65,19 +67,21 @@ interface BoardColumn {
     Column,
     AddColumnButton,
     DragScrollDirective,
-    CdkDropListGroup
+    CdkDropListGroup,
+    CardModal,
   ],
-  providers: [provideIcons({ heroPlus })]
+  providers: [provideIcons({ heroPlus })],
 })
 export class App {
   private authService = inject(AuthService);
+  private kanbanService = inject(KanbanService);
 
   protected readonly title = signal('kanban-board');
 
   projects = signal<Project[]>([
     { id: '1', title: 'Health Web App', owner: 'Adelya Musaeva' },
     { id: '2', title: 'Education Web App', owner: 'Adelya Musaeva' },
-    { id: '3', title: 'Finance Mobile App', owner: 'Adelya Musaeva' }
+    { id: '3', title: 'Finance Mobile App', owner: 'Adelya Musaeva' },
   ]);
 
   mockCollaborators = signal<Collaborator[]>([
@@ -85,146 +89,23 @@ export class App {
     { id: '2', photoURL: 'https://i.pravatar.cc/150?img=2', displayName: 'Bob Smith' },
     { id: '3', photoURL: 'https://i.pravatar.cc/150?img=3', displayName: 'Carol White' },
     { id: '4', photoURL: 'https://i.pravatar.cc/150?img=4', displayName: 'David Brown' },
-    { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' }
+    { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' },
   ]);
 
-  mockColumns = signal<BoardColumn[]>([
-    {
-      id: '1',
-      title: 'To Do',
-      color: 'bg-scarlet-rush',
-      cards: [
-        {
-          id: '1',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=1',
-            displayName: 'Alice'
-          },
-          commentsCount: 3,
-          attachmentsCount: 2
-        },
-        {
-          id: '2',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=2',
-            displayName: 'Bob'
-          },
-          commentsCount: 1,
-          attachmentsCount: 2
-        }
-      ]
-    },
-    {
-      id: '2',
-      title: 'In Progress',
-      color: 'bg-scarlet-rush',
-      cards: [
-        {
-          id: '3',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=3',
-            displayName: 'Carol'
-          },
-          commentsCount: 3,
-          attachmentsCount: 2
-        },
-        {
-          id: '4',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          commentsCount: 1,
-          attachmentsCount: 2
-        },
-        {
-          id: '5',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=4',
-            displayName: 'David'
-          },
-          commentsCount: 3,
-          attachmentsCount: 2
-        },
-        {
-          id: '20',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=4',
-            displayName: 'David'
-          },
-          commentsCount: 3,
-          attachmentsCount: 2
-        }  
-      ]
-    },
-    {
-      id: '3',
-      title: 'Done',
-      color: 'bg-scarlet-rush',
-      cards: [
-        {
-          id: '6',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=5',
-            displayName: 'Eva'
-          },
-          commentsCount: 3,
-          attachmentsCount: 2
-        },
-        {
-          id: '7',
-          title: 'Design Notification Banner',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' }
-          ],
-          commentsCount: 3,
-          attachmentsCount: 2
-        }
-      ]
-    }
-  ]);
+  mockColumns = this.kanbanService.allColumns;
 
   selectedProjectId = signal<string | null>('1');
 
   selectedProject = computed(() => {
     const projectId = this.selectedProjectId();
-    return this.projects().find(p => p.id === projectId);
+    return this.projects().find((p) => p.id === projectId);
   });
 
   currentUser = this.authService.currentUser;
   isLoggedIn = computed(() => this.currentUser() !== null);
+
+  selectedCardId = signal<string | null>(null);
+  selectedColumnId = signal<string | null>(null);
 
   selectProject(projectId: string) {
     this.selectedProjectId.set(projectId);
@@ -247,55 +128,25 @@ export class App {
   }
 
   handleAddCard(columnId: string, cardTitle: string) {
-    const columns = this.mockColumns();
-    const columnIndex = columns.findIndex(col => col.id === columnId);
-    
-    if (columnIndex !== -1) {
-      const newCard: KanbanCard = {
-        id: `card-${Date.now()}`,
-        title: cardTitle,
-        labels: [],
-        commentsCount: 0,
-        attachmentsCount: 0
-      };
-      
-      const updatedColumns = [...columns];
-      updatedColumns[columnIndex] = {
-        ...updatedColumns[columnIndex],
-        cards: [...updatedColumns[columnIndex].cards, newCard]
-      };
-      
-      this.mockColumns.set(updatedColumns);
-    }
+    this.kanbanService.addCard(columnId,cardTitle);
   }
 
-  handleCardClick(cardId: string) {
-    console.log('Card clicked:', cardId);
+  handleCardClick(columnId: string, cardId: string): void {
+    this.selectedColumnId.set(columnId);
+    this.selectedCardId.set(cardId);
   }
 
   handleAddColumn(columnTitle: string) {
-  const newColumn: BoardColumn = {
-    id: `column-${Date.now()}`,
-    title: columnTitle || 'New Column',
-    color: 'bg-scarlet-rush',
-    cards: []
-  };
-  
-  this.mockColumns.update(columns => [...columns, newColumn]);
-}
+    this.kanbanService.addColumn(columnTitle);
+  }
 
-  handleCardDrop(event: { previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }) {
-    const columns = this.mockColumns();
-    const previousColumnIndex = columns.findIndex(col => col.id === event.previousColumnId);
-    const currentColumnIndex = columns.findIndex(col => col.id === event.currentColumnId);
-    
-    if (previousColumnIndex === -1 || currentColumnIndex === -1) return;
-    
-    const updatedColumns = [...columns];
-    const [movedCard] = updatedColumns[previousColumnIndex].cards.splice(event.previousIndex, 1);
-    updatedColumns[currentColumnIndex].cards.splice(event.currentIndex, 0, movedCard);
-    
-    this.mockColumns.set(updatedColumns);
+  handleCardDrop(event: {
+    previousColumnId: string;
+    currentColumnId: string;
+    previousIndex: number;
+    currentIndex: number;
+  }) {
+    this.kanbanService.moveCard(event);
   }
 
   async handleLogin() {
@@ -316,5 +167,10 @@ export class App {
 
   isProjectSelected(projectId: string): boolean {
     return this.selectedProjectId() === projectId;
+  }
+
+  closeModal(): void {
+    this.selectedCardId.set(null);
+    this.selectedColumnId.set(null);
   }
 }

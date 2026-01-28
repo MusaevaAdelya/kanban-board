@@ -1,0 +1,220 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-container" (click)="stopPropagation($event)">
+    @if (modalService.card(); as currentCard) {
+      <!-- Header -->
+      <div class="modal-header">
+        <h2 class="text-2xl font-bold">{{ currentCard.title }}</h2>
+        <button class="close-button" (click)="close()">
+          <ng-icon name="heroXMark" size="2rem"></ng-icon>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="modal-content">
+        <!-- Left Section -->
+        <div class="left-section">
+          <!-- Labels -->
+          <div class="section">
+            <div class="section-header">
+              <button class="label-button" (click)="modalService.showLabelPopup.set(!modalService.showLabelPopup())">
+                <ng-icon name="heroTag" size="1.25rem"></ng-icon>
+                <span>Labels</span>
+                <ng-icon name="heroPlus" size="1.25rem"></ng-icon>
+              </button>
+            </div>
+
+            @if (currentCard.labels.length > 0) {
+              <div class="labels-list">
+                @for (label of currentCard.labels; track label.id) {
+                  <span class="label-tag" [style.background-color]="label.color">
+                    {{ label.name }}
+                  </span>
+                }
+              </div>
+            }
+
+            <!-- Label Popup -->
+            @if (modalService.showLabelPopup()) {
+              <div class="label-popup">
+                @if (!modalService.showCreateLabel()) {
+                  <div class="popup-header">
+                    <button (click)="modalService.showLabelPopup.set(false)" class="back-button">
+                      <ng-icon name="heroArrowLongLeft" size="1.25rem"></ng-icon>
+                    </button>
+                    <h3>Labels</h3>
+                    <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
+                      <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
+                    </button>
+                  </div>
+                }
+
+                @if (!modalService.showCreateLabel()) {
+                  <div class="labels-checkboxes">
+                    @for (label of modalService.availableLabels(); track label.id) {
+                      <label class="label-checkbox">
+                        <input
+                          type="checkbox"
+                          [checked]="modalService.isLabelSelected(label.id)"
+                          (change)="toggleLabel(label)"
+                        />
+                        <span class="label-color-box" [style.background-color]="label.color">
+                          {{ label.name }}
+                        </span>
+                        <button class="edit-label-button">
+                          <ng-icon name="heroPencil" size="1.25rem"></ng-icon>
+                        </button>
+                      </label>
+                    }
+                    <button class="create-label-button" (click)="modalService.showCreateLabel.set(true)">
+                      Create a new label
+                    </button>
+                  </div>
+                } @else {
+                  <div class="create-label-form">
+                    <div class="popup-header">
+                      <button (click)="modalService.showCreateLabel.set(false)" class="back-button">
+                        <ng-icon name="heroArrowLongLeft" size="1.25rem"></ng-icon>
+                      </button>
+                      <h3>Create label</h3>
+                      <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
+                        <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
+                      </button>
+                    </div>
+
+                    <label class="form-label">Title</label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      [(ngModel)]="modalService.newLabelName"
+                      placeholder="Label name"
+                    />
+
+                    <label class="form-label">Select a color</label>
+                    <div class="color-grid">
+                      @for (color of modalService.colors; track color) {
+                        <button
+                          class="color-box"
+                          [class.selected]="modalService.newLabelColor() === color"
+                          [style.background-color]="color"
+                          (click)="modalService.newLabelColor.set(color)"
+                        ></button>
+                      }
+                    </div>
+
+                    <button class="create-button" (click)="modalService.createLabel()">Create</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Description -->
+          <div class="section">
+            <div class="section-header">
+              <h3>Description</h3>
+              @if (!modalService.isEditingDescription() && currentCard.description) {
+                <button class="edit-button" (click)="modalService.startEditingDescription()">
+                  <ng-icon name="heroPencil" size="1.25rem"></ng-icon>
+                </button>
+              }
+            </div>
+
+            @if (modalService.isEditingDescription() || !currentCard.description) {
+              <textarea
+                class="description-textarea"
+                rows="5"
+                [(ngModel)]="modalService.description"
+                placeholder="Add a more detailed description..."
+              ></textarea>
+              <div class="button-group">
+                <button class="save-button" (click)="modalService.saveDescription()">Save</button>
+                <button class="cancel-button" (click)="modalService.cancelDescription()">Cancel</button>
+              </div>
+            } @else {
+              <div class="description-display" (click)="modalService.startEditingDescription()">
+                {{ currentCard.description }}
+              </div>
+            }
+          </div>
+
+          <!-- Attachments -->
+          <div class="section">
+            <div class="section-header">
+              <ng-icon name="heroPaperClip" size="1.5rem"></ng-icon>
+              <h3>Attachments</h3>
+              <label class="add-button">
+                <input type="file" hidden (change)="handleFileSelect($event)" />
+                Add
+              </label>
+            </div>
+
+            @if (currentCard.attachments && currentCard.attachments.length > 0) {
+              <div class="attachments-list">
+                @for (attachment of currentCard.attachments; track attachment.id) {
+                  <div class="attachment-item">
+                    <div class="attachment-icon">
+                      {{ attachment.type.includes('pdf') ? 'PDF' : 'FILE' }}
+                    </div>
+                    <div class="attachment-info">
+                      <p class="attachment-name">{{ attachment.name }}</p>
+                      <p class="attachment-meta">added {{ modalService.getTimeAgo(attachment.addedAt) }}</p>
+                    </div>
+                    <div class="attachment-actions">
+                      <button class="action-menu">
+                        <ng-icon name="heroEllipsisHorizontal" size="1.25rem"></ng-icon>
+                      </button>
+                      <div class="action-dropdown">
+                        <button>Download</button>
+                        <button class="delete-action" (click)="modalService.deleteAttachment(attachment.id)">
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Right Section - Comments -->
+        <div class="right-section">
+          <div class="comments-header">
+            <ng-icon name="heroChatBubbleLeftRight" size="1.25rem"></ng-icon>
+            <h3>Comments and activity</h3>
+          </div>
+
+          <textarea
+            class="comment-input"
+            rows="3"
+            [(ngModel)]="modalService.newComment"
+            placeholder="Write a comment..."
+          ></textarea>
+
+          <button 
+            class="add-comment-button" 
+            (click)="modalService.addComment()"
+            [disabled]="!modalService.newComment().trim()"
+          >
+            Add Comment
+          </button>
+
+          <div class="comments-list">
+            @for (comment of currentCard.comments; track comment.id) {
+              <div class="comment-item">
+                <img [src]="comment.userPhotoURL" [alt]="comment.userName" class="comment-avatar" />
+                <div class="comment-content">
+                  <div class="comment-header">
+                    <span class="comment-author">{{ comment.userName }}</span>
+                    <span class="comment-time">{{ modalService.getTimeAgo(comment.createdAt) }}</span>
+                  </div>
+                  <p class="comment-text">{{ comment.text }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

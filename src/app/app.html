@@ -73,7 +73,11 @@
             (inviteClicked)="handleInvite()"
           />
 
-          <div class="flex gap-6 mt-6 overflow-x-auto min-w-0 pb-10 columns-container" appDragScroll cdkDropListGroup>
+          <div
+            class="flex gap-6 mt-6 overflow-x-auto min-w-0 pb-10 columns-container"
+            appDragScroll
+            cdkDropListGroup
+          >
             @for (column of mockColumns(); track column.id) {
               <app-column
                 [columnId]="column.id"
@@ -82,7 +86,7 @@
                 [cards]="column.cards"
                 (menuClicked)="handleColumnMenu(column.id)"
                 (addCard)="handleAddCard(column.id, $event)"
-                (cardClicked)="handleCardClick($event)"
+                (cardClicked)="handleCardClick(column.id, $event)"
                 (cardDropped)="handleCardDrop($event)"
               />
             }
@@ -99,5 +103,13 @@
         </div>
       }
     </div>
+    <!-- Card Modal -->
+    @if (selectedCardId() && selectedColumnId()) {
+      <app-card-modal
+        [columnId]="selectedColumnId()!"
+        [cardId]="selectedCardId()!"
+        (closed)="closeModal()"
+      />
+    }
   </div>
 </main>
