@@ -4,10 +4,10 @@
     <div class="flex items-center justify-between">
       <h3 class="text-base text-text-white">{{ title() }}</h3>
       <button
-        class="bg-sky-mint border-2 border-secondary rounded-sm flex items-center px-3 shadow-[3px_3px_0_0_var(--color-secondary)] cursor-pointer"
-        (click)="menuClicked.emit()"
+        class="bg-sky-mint border-2 border-secondary rounded-sm flex items-center px-3 shadow-[3px_3px_0_0_var(--color-secondary)] cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)]"
+        (click)="menuClicked.emit(columnId())"
       >
-        <ng-icon name="heroEllipsisHorizontal" size="1.5rem"></ng-icon>
+        <ng-icon name="heroXMark" size="1.5rem"></ng-icon>
       </button>
     </div>
   </div>

@@ -124,7 +124,7 @@ export class App {
   }
 
   handleColumnMenu(columnId: string) {
-    console.log('Column menu clicked:', columnId);
+    this.kanbanService.deleteColumn(columnId)
   }
 
   handleAddCard(columnId: string, cardTitle: string) {

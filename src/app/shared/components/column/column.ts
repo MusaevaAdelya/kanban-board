@@ -38,7 +38,7 @@ export class Column {
   isAddingCard = signal(false);
   newCardTitle = signal('');
   
-  menuClicked = output<void>();
+  menuClicked = output<string>();
   addCard = output<string>();
   cardClicked = output<string>();
   cardDropped = output<{ previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }>();
