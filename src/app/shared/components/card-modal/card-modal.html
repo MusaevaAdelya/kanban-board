@@ -3,9 +3,9 @@
     @if (modalService.card(); as currentCard) {
       <!-- Header -->
       <div class="modal-header">
-        <h2 class="text-2xl font-bold">{{ currentCard.title }}</h2>
+        <h2 class="text-lg md:text-2xl font-bold truncate">{{ currentCard.title }}</h2>
         <button class="close-button" (click)="close()">
-          <ng-icon name="heroXMark" size="2rem"></ng-icon>
+          <ng-icon name="heroXMark" size="1.5rem" class="md:text-3xl"></ng-icon>
         </button>
       </div>
 
@@ -17,9 +17,9 @@
           <div class="section">
             <div class="section-header">
               <button class="label-button" (click)="modalService.showLabelPopup.set(!modalService.showLabelPopup())">
-                <ng-icon name="heroTag" size="1.25rem"></ng-icon>
-                <span>Labels</span>
-                <ng-icon name="heroPlus" size="1.25rem"></ng-icon>
+                <ng-icon name="heroTag" size="1rem" class="md:text-xl"></ng-icon>
+                <span class="text-sm md:text-base">Labels</span>
+                <ng-icon name="heroPlus" size="1rem" class="md:text-xl"></ng-icon>
               </button>
             </div>
 
@@ -39,11 +39,11 @@
                 @if (!modalService.showCreateLabel()) {
                   <div class="popup-header">
                     <button (click)="modalService.showLabelPopup.set(false)" class="back-button">
-                      <ng-icon name="heroArrowLongLeft" size="1.25rem"></ng-icon>
+                      <ng-icon name="heroArrowLongLeft" size="1rem" class="md:text-xl"></ng-icon>
                     </button>
-                    <h3>Labels</h3>
+                    <h3 class="text-sm md:text-base">Labels</h3>
                     <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
-                      <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
+                      <ng-icon name="heroXMark" size="1rem" class="md:text-xl"></ng-icon>
                     </button>
                   </div>
                 }
@@ -70,11 +70,11 @@
                   <div class="create-label-form">
                     <div class="popup-header">
                       <button (click)="modalService.showCreateLabel.set(false)" class="back-button">
-                        <ng-icon name="heroArrowLongLeft" size="1.25rem"></ng-icon>
+                        <ng-icon name="heroArrowLongLeft" size="1rem" class="md:text-xl"></ng-icon>
                       </button>
-                      <h3>Create label</h3>
+                      <h3 class="text-sm md:text-base">Create label</h3>
                       <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
-                        <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
+                        <ng-icon name="heroXMark" size="1rem" class="md:text-xl"></ng-icon>
                       </button>
                     </div>
 
@@ -108,10 +108,10 @@
           <!-- Description -->
           <div class="section">
             <div class="section-header">
-              <h3>Description</h3>
+              <h3 class="text-sm md:text-base">Description</h3>
               @if (!modalService.isEditingDescription() && currentCard.description) {
                 <button class="edit-button" (click)="modalService.startEditingDescription()">
-                  <ng-icon name="heroPencil" size="1.25rem"></ng-icon>
+                  <ng-icon name="heroPencil" size="1rem" class="md:text-xl"></ng-icon>
                 </button>
               }
             </div>
@@ -137,8 +137,8 @@
           <!-- Attachments -->
           <div class="section">
             <div class="section-header">
-              <ng-icon name="heroPaperClip" size="1.5rem"></ng-icon>
-              <h3>Attachments</h3>
+              <ng-icon name="heroPaperClip" size="1.25rem" class="md:text-2xl"></ng-icon>
+              <h3 class="text-sm md:text-base">Attachments</h3>
               <label class="add-button">
                 <input type="file" hidden (change)="handleFileSelect($event)" />
                 Add
@@ -158,7 +158,7 @@
                     </div>
                     <div class="attachment-actions">
                       <button class="action-menu">
-                        <ng-icon name="heroEllipsisHorizontal" size="1.25rem"></ng-icon>
+                        <ng-icon name="heroEllipsisHorizontal" size="1rem" class="md:text-xl"></ng-icon>
                       </button>
                       <div class="action-dropdown">
                         <button (click)="downloadAttachment(attachment)">Download</button>
@@ -177,8 +177,8 @@
         <!-- Right Section - Comments -->
         <div class="right-section">
           <div class="comments-header">
-            <ng-icon name="heroChatBubbleLeftRight" size="1.25rem"></ng-icon>
-            <h3>Comments and activity</h3>
+            <ng-icon name="heroChatBubbleLeftRight" size="1rem" class="md:text-xl"></ng-icon>
+            <h3 class="text-sm md:text-base">Comments and activity</h3>
           </div>
 
           <textarea
