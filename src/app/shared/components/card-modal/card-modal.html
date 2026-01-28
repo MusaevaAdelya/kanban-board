@@ -161,7 +161,7 @@
                         <ng-icon name="heroEllipsisHorizontal" size="1.25rem"></ng-icon>
                       </button>
                       <div class="action-dropdown">
-                        <button>Download</button>
+                        <button (click)="downloadAttachment(attachment)">Download</button>
                         <button class="delete-action" (click)="modalService.deleteAttachment(attachment.id)">
                           Delete
                         </button>

@@ -13,7 +13,7 @@ import {
 } from '@ng-icons/heroicons/outline';
 import { FormsModule } from '@angular/forms';
 import { CardModalService } from '../../../core/services/card-modal.service';
-import { Label } from '../../../core/models/kanban.model';
+import { Label, Attachment } from '../../../core/models/kanban.model';
 
 @Component({
   selector: 'app-card-modal',
@@ -72,5 +72,9 @@ export class CardModal {
 
   toggleLabel(label: Label): void {
     this.modalService.toggleLabel(label);
+  }
+
+  downloadAttachment(attachment: Attachment): void {
+    this.modalService.downloadAttachment(attachment);
   }
 }

@@ -170,4 +170,20 @@ export class CardModalService {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
     return `${Math.floor(seconds / 86400)} days ago`;
   }
+
+  downloadAttachment(attachment: Attachment): void {
+  // Создаем ссылку для скачивания
+  const link = document.createElement('a');
+  link.href = attachment.url;
+  link.download = attachment.name;
+  
+  // Для файлов, которые могут открыться в браузере (PDF, изображения),
+  // добавляем атрибут для принудительной загрузки
+  link.target = '_blank';
+  
+  // Добавляем ссылку в DOM, кликаем и удаляем
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 }
