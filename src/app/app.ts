@@ -1,11 +1,6 @@
-import { Component, signal, computed, inject } from '@angular/core';
-import { provideIcons, NgIcon } from '@ng-icons/core';
-import { heroPlus, heroXMark } from '@ng-icons/heroicons/outline';
-import { Card } from './shared/components/card/card';
-import { Button } from './shared/components/button/button';
-import { ProjectItem } from './shared/components/project-item/project-item';
-import { UserProfile } from './shared/components/user-profile/user-profile';
-import { LoginButton } from './shared/components/login-button/login-button';
+import { Component, signal, inject } from '@angular/core';
+import { provideIcons } from '@ng-icons/core';
+import { heroPlus } from '@ng-icons/heroicons/outline';
 import { AuthService } from './core/services/auth.service';
 import { BoardHeader } from './shared/components/board-header/board-header';
 import { Column } from './shared/components/column/column';
@@ -14,43 +9,13 @@ import { DragScrollDirective } from './shared/directives/drag-scroll.directive';
 import { CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { CardModal } from './shared/components/card-modal/card-modal';
 import { KanbanService } from './core/services/kanban.service';
-import { FormsModule } from '@angular/forms';
-
-interface Project {
-  id: string;
-  title: string;
-  owner: string;
-}
+import { ProjectService } from './core/services/project.service';
+import { Sidebar } from './shared/components/sidebar/sidebar';
 
 interface Collaborator {
   id: string;
   photoURL: string;
   displayName: string;
-}
-
-interface Label {
-  id: string;
-  name: string;
-  color: string;
-}
-
-interface KanbanCard {
-  id: string;
-  title: string;
-  labels: Label[];
-  assignee?: {
-    photoURL: string;
-    displayName: string;
-  };
-  commentsCount: number;
-  attachmentsCount: number;
-}
-
-interface BoardColumn {
-  id: string;
-  title: string;
-  color: string;
-  cards: KanbanCard[];
 }
 
 @Component({
@@ -59,33 +24,20 @@ interface BoardColumn {
   templateUrl: './app.html',
   styleUrl: './app.scss',
   imports: [
-    Card,
-    Button,
-    ProjectItem,
-    UserProfile,
-    LoginButton,
     BoardHeader,
     Column,
     AddColumnButton,
     DragScrollDirective,
     CdkDropListGroup,
     CardModal,
-    FormsModule,
-    NgIcon,
+    Sidebar
   ],
-  providers: [provideIcons({ heroPlus, heroXMark })],
+  providers: [provideIcons({ heroPlus })],
 })
 export class App {
   private authService = inject(AuthService);
   private kanbanService = inject(KanbanService);
-
-  protected readonly title = signal('kanban-board');
-
-  projects = signal<Project[]>([
-    { id: '1', title: 'Health Web App', owner: 'Adelya Musaeva' },
-    { id: '2', title: 'Education Web App', owner: 'Adelya Musaeva' },
-    { id: '3', title: 'Finance Mobile App', owner: 'Adelya Musaeva' },
-  ]);
+  private projectService = inject(ProjectService);
 
   mockCollaborators = signal<Collaborator[]>([
     { id: '1', photoURL: 'https://i.pravatar.cc/150?img=1', displayName: 'Alice Johnson' },
@@ -95,77 +47,25 @@ export class App {
     { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' },
   ]);
 
-  isAddingProject = signal(false);
-  newProjectTitle = signal('');
-  newProjectOwner = signal('');
-
   mockColumns = this.kanbanService.allColumns;
-
-  selectedProjectId = signal<string | null>('1');
-
-  selectedProject = computed(() => {
-    const projectId = this.selectedProjectId();
-    return this.projects().find((p) => p.id === projectId);
-  });
-
-  currentUser = this.authService.currentUser;
-  isLoggedIn = computed(() => this.currentUser() !== null);
+  selectedProject = this.projectService.selectedProject;
 
   selectedCardId = signal<string | null>(null);
   selectedColumnId = signal<string | null>(null);
 
-  selectProject(projectId: string) {
-    this.selectedProjectId.set(projectId);
-  }
-
-  addProject() {
-    // Проверяем, залогинен ли пользователь
-    if (!this.isLoggedIn()) {
-      console.log('Please login to add projects');
-      return;
-    }
-    this.isAddingProject.set(true);
-  }
-
-  handleAddProject() {
-    const title = this.newProjectTitle().trim();
-    const user = this.currentUser();
-
-    // Двойная проверка: есть ли название и залогинен ли пользователь
-    if (title && user) {
-      const newProject: Project = {
-        id: `project-${Date.now()}`,
-        title,
-        owner: user.displayName || user.email || 'Unknown User', // Используем displayName или email
-      };
-
-      this.projects.update((projects) => [...projects, newProject]);
-      this.selectedProjectId.set(newProject.id);
-
-      // Очистка формы
-      this.newProjectTitle.set('');
-      this.isAddingProject.set(false);
-    }
-  }
-
-  cancelAddProject() {
-    this.newProjectTitle.set('');
-    this.isAddingProject.set(false);
-  }
-
-  generateTestData() {
+  generateTestData(): void {
     console.log('Generate test data');
   }
 
-  handleInvite() {
+  handleInvite(): void {
     console.log('Invite people clicked');
   }
 
-  handleColumnMenu(columnId: string) {
+  handleColumnMenu(columnId: string): void {
     this.kanbanService.deleteColumn(columnId);
   }
 
-  handleAddCard(columnId: string, cardTitle: string) {
+  handleAddCard(columnId: string, cardTitle: string): void {
     this.kanbanService.addCard(columnId, cardTitle);
   }
 
@@ -174,7 +74,7 @@ export class App {
     this.selectedCardId.set(cardId);
   }
 
-  handleAddColumn(columnTitle: string) {
+  handleAddColumn(columnTitle: string): void {
     this.kanbanService.addColumn(columnTitle);
   }
 
@@ -183,11 +83,11 @@ export class App {
     currentColumnId: string;
     previousIndex: number;
     currentIndex: number;
-  }) {
+  }): void {
     this.kanbanService.moveCard(event);
   }
 
-  async handleLogin() {
+  async handleLogin(): Promise<void> {
     try {
       await this.authService.signInWithGoogle();
     } catch (error) {
@@ -195,16 +95,12 @@ export class App {
     }
   }
 
-  async handleLogout() {
+  async handleLogout(): Promise<void> {
     try {
       await this.authService.signOut();
     } catch (error) {
       console.error('Logout failed:', error);
     }
-  }
-
-  isProjectSelected(projectId: string): boolean {
-    return this.selectedProjectId() === projectId;
   }
 
   closeModal(): void {
