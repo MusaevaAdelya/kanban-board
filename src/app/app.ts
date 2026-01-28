@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
-import { provideIcons } from '@ng-icons/core';
-import { heroPlus } from '@ng-icons/heroicons/outline';
+import { provideIcons, NgIcon } from '@ng-icons/core';
+import { heroPlus, heroXMark } from '@ng-icons/heroicons/outline';
 import { Card } from './shared/components/card/card';
 import { Button } from './shared/components/button/button';
 import { ProjectItem } from './shared/components/project-item/project-item';
@@ -14,6 +14,7 @@ import { DragScrollDirective } from './shared/directives/drag-scroll.directive';
 import { CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { CardModal } from './shared/components/card-modal/card-modal';
 import { KanbanService } from './core/services/kanban.service';
+import { FormsModule } from '@angular/forms';
 
 interface Project {
   id: string;
@@ -69,8 +70,10 @@ interface BoardColumn {
     DragScrollDirective,
     CdkDropListGroup,
     CardModal,
+    FormsModule,
+    NgIcon,
   ],
-  providers: [provideIcons({ heroPlus })],
+  providers: [provideIcons({ heroPlus, heroXMark })],
 })
 export class App {
   private authService = inject(AuthService);
@@ -92,6 +95,10 @@ export class App {
     { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' },
   ]);
 
+  isAddingProject = signal(false);
+  newProjectTitle = signal('');
+  newProjectOwner = signal('');
+
   mockColumns = this.kanbanService.allColumns;
 
   selectedProjectId = signal<string | null>('1');
@@ -112,7 +119,38 @@ export class App {
   }
 
   addProject() {
-    console.log('Add new project');
+    // Проверяем, залогинен ли пользователь
+    if (!this.isLoggedIn()) {
+      console.log('Please login to add projects');
+      return;
+    }
+    this.isAddingProject.set(true);
+  }
+
+  handleAddProject() {
+    const title = this.newProjectTitle().trim();
+    const user = this.currentUser();
+
+    // Двойная проверка: есть ли название и залогинен ли пользователь
+    if (title && user) {
+      const newProject: Project = {
+        id: `project-${Date.now()}`,
+        title,
+        owner: user.displayName || user.email || 'Unknown User', // Используем displayName или email
+      };
+
+      this.projects.update((projects) => [...projects, newProject]);
+      this.selectedProjectId.set(newProject.id);
+
+      // Очистка формы
+      this.newProjectTitle.set('');
+      this.isAddingProject.set(false);
+    }
+  }
+
+  cancelAddProject() {
+    this.newProjectTitle.set('');
+    this.isAddingProject.set(false);
   }
 
   generateTestData() {
@@ -124,11 +162,11 @@ export class App {
   }
 
   handleColumnMenu(columnId: string) {
-    this.kanbanService.deleteColumn(columnId)
+    this.kanbanService.deleteColumn(columnId);
   }
 
   handleAddCard(columnId: string, cardTitle: string) {
-    this.kanbanService.addCard(columnId,cardTitle);
+    this.kanbanService.addCard(columnId, cardTitle);
   }
 
   handleCardClick(columnId: string, cardId: string): void {
