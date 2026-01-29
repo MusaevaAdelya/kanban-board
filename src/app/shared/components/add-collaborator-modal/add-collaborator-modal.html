@@ -1,0 +1,43 @@
+<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="close()">
+  <div class="w-full max-w-md" (click)="stopPropagation($event)">
+    <app-card>
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl md:text-2xl font-bold">Add Collaborator</h2>
+          <button class="rounded-full hover:bg-gray-100 p-1 transition-colors" (click)="close()">
+            <ng-icon name="heroXMark" size="1.5rem"></ng-icon>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium">Email address</label>
+          <input
+            type="email"
+            placeholder="colleague@example.com"
+            class="w-full p-3 border-2 border-secondary rounded-sm text-base focus:outline-none focus:ring-2 focus:ring-accent"
+            [(ngModel)]="collaboratorEmail"
+            (keydown.enter)="handleAdd()"
+            (keydown.escape)="close()"
+            autofocus
+          />
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            class="flex-1 bg-accent border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] py-3 px-4 text-base font-bold hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            (click)="handleAdd()"
+            [disabled]="!collaboratorEmail().trim() || isAdding()"
+          >
+            {{ isAdding() ? 'Adding...' : 'Add Collaborator' }}
+          </button>
+          <button
+            class="rounded-full w-12 h-12 bg-scarlet-rush flex items-center justify-center cursor-pointer hover:bg-red-600 transition-colors"
+            (click)="close()"
+          >
+            <ng-icon name="heroXMark" size="1.5rem" color="white"></ng-icon>
+          </button>
+        </div>
+      </div>
+    </app-card>
+  </div>
+</div>

@@ -1,5 +1,5 @@
 // app.component.ts
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, viewChild } from '@angular/core';
 import { provideIcons, NgIcon } from '@ng-icons/core';
 import { heroPlus, heroBars3, heroXMark } from '@ng-icons/heroicons/outline';
 import { AuthService } from './core/services/auth.service';
@@ -13,6 +13,9 @@ import { KanbanService } from './core/services/kanban.service';
 import { ProjectService } from './core/services/project.service';
 import { BoardService } from './core/services/board.service';
 import { Sidebar } from './shared/components/sidebar/sidebar';
+import { Toast } from './shared/components/toast/toast';
+import { AddCollaboratorModal } from './shared/components/add-collaborator-modal/add-collaborator-modal';
+import { ToastService } from './core/services/toast.service';
 import { computed, effect } from '@angular/core';
 
 @Component({
@@ -29,6 +32,8 @@ import { computed, effect } from '@angular/core';
     CardModal,
     Sidebar,
     NgIcon,
+    Toast,
+    AddCollaboratorModal,
   ],
   providers: [provideIcons({ heroPlus, heroBars3, heroXMark })],
 })
@@ -37,14 +42,19 @@ export class App implements OnInit, OnDestroy {
   private kanbanService = inject(KanbanService);
   private projectService = inject(ProjectService);
   private boardService = inject(BoardService);
+  private toastService = inject(ToastService);
 
   isMobileSidebarOpen = this.projectService.isMobileSidebarOpen;
   isLoadingProjects = signal(false);
+  showAddCollaboratorModal = signal(false);
 
   columnsWithCards = this.kanbanService.columnsWithCards;
   selectedProject = this.projectService.selectedProject;
 
   selectedCardId = signal<string | null>(null);
+
+  // Reference to modal for resetting form
+  addCollaboratorModal = viewChild(AddCollaboratorModal);
 
   // Computed collaborators from selected board
   collaborators = computed(() => {
@@ -68,17 +78,14 @@ export class App implements OnInit, OnDestroy {
     effect(async () => {
       const user = this.authService.currentUser();
       if (user) {
-        // Пользователь залогинился
         await this.loadProjectsAndBoard();
       } else {
-        // Пользователь разлогинился - очищаем все данные
         this.clearAllData();
       }
     });
   }
 
   async ngOnInit() {
-    // Загружаем проекты при инициализации (если пользователь уже залогинен)
     const user = this.authService.currentUser();
     if (user) {
       await this.loadProjectsAndBoard();
@@ -110,35 +117,45 @@ export class App implements OnInit, OnDestroy {
   }
 
   private clearAllData(): void {
-    // Очищаем все данные при logout
     this.kanbanService.cleanup();
     this.boardService.clearBoards();
     this.selectedCardId.set(null);
     this.isMobileSidebarOpen.set(false);
+    this.showAddCollaboratorModal.set(false);
   }
 
   toggleMobileSidebar(): void {
     this.projectService.toggleMobileSidebar();
   }
 
-  async handleInvite(): Promise<void> {
+  handleInvite(): void {
+    this.showAddCollaboratorModal.set(true);
+  }
+
+  async handleAddCollaborator(email: string): Promise<void> {
     const board = this.boardService.selectedBoard();
     if (!board) return;
 
-    const email = prompt('Enter collaborator email:');
-    if (!email) return;
-
     try {
       await this.boardService.addCollaborator(board.id, email, 'editor');
-      alert(`✅ ${email} added as collaborator!`);
+      this.toastService.success(`✅ ${email} added as collaborator!`);
+      this.showAddCollaboratorModal.set(false);
+      this.addCollaboratorModal()?.resetForm();
     } catch (error: any) {
-      alert(`❌ Failed to add collaborator: ${error.message}`);
+      this.toastService.error(error.message || 'Failed to add collaborator');
+      this.addCollaboratorModal()?.resetForm();
     }
+  }
+
+  closeAddCollaboratorModal(): void {
+    this.showAddCollaboratorModal.set(false);
+    this.addCollaboratorModal()?.resetForm();
   }
 
   async handleColumnMenu(columnId: string): Promise<void> {
     if (confirm('Are you sure you want to delete this column and all its cards?')) {
       await this.kanbanService.deleteColumn(columnId);
+      this.toastService.success('Column deleted successfully');
     }
   }
 
@@ -169,18 +186,19 @@ export class App implements OnInit, OnDestroy {
   async handleLogin(): Promise<void> {
     try {
       await this.authService.signInWithGoogle();
-      // Проекты загрузятся автоматически через callback и effect
     } catch (error) {
       console.error('Login failed:', error);
+      this.toastService.error('Login failed. Please try again.');
     }
   }
 
   async handleLogout(): Promise<void> {
     try {
       await this.authService.signOut();
-      // Данные очистятся автоматически через effect
+      this.toastService.info('Logged out successfully');
     } catch (error) {
       console.error('Logout failed:', error);
+      this.toastService.error('Logout failed');
     }
   }
 

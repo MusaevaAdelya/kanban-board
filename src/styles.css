@@ -12,9 +12,22 @@
   --color-sky-mint: #72CDDA;
   --color-neon-leaf: #DCF45F;
   --color-scarlet-rush: #F34430;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
 }
 
-body{
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+body {
   font-family: "Arvo", serif;
   color: var(--color-text-primary);
   background-color: var(--color-accent);
@@ -27,8 +40,8 @@ body{
   box-sizing: border-box;
   border-radius: 4px;
   box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
-              0 8px 10px 1px rgba(0, 0, 0, 0.14),
-              0 3px 14px 2px rgba(0, 0, 0, 0.12);
+    0 8px 10px 1px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12);
   opacity: 0.8;
 }
 
