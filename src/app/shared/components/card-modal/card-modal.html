@@ -113,6 +113,37 @@
             }
           </div>
 
+          <!-- Description -->
+          <div class="section">
+            <div class="section-header">
+              <h3 class="text-sm md:text-base">Description</h3>
+              @if (!modalService.isEditingDescription() && currentCard.description) {
+                <button class="edit-button" (click)="modalService.startEditingDescription()">
+                  <ng-icon name="heroPencil" size="1rem" class="md:text-xl"></ng-icon>
+                </button>
+              }
+            </div>
+
+            @if (modalService.isEditingDescription() || !currentCard.description) {
+              <textarea
+                class="description-textarea"
+                rows="5"
+                [(ngModel)]="modalService.description"
+                placeholder="Add a more detailed description..."
+              ></textarea>
+              <div class="button-group">
+                <button class="save-button" (click)="modalService.saveDescription()">Save</button>
+                <button class="cancel-button" (click)="modalService.cancelDescription()">
+                  Cancel
+                </button>
+              </div>
+            } @else {
+              <div class="description-display" (click)="modalService.startEditingDescription()">
+                {{ currentCard.description }}
+              </div>
+            }
+          </div>
+
           <!-- Assignee Section -->
           <div class="section">
             <div class="section-header">
@@ -193,37 +224,6 @@
                     <p class="text-sm text-text-secondary p-2">No collaborators available</p>
                   }
                 </div>
-              </div>
-            }
-          </div>
-
-          <!-- Description -->
-          <div class="section">
-            <div class="section-header">
-              <h3 class="text-sm md:text-base">Description</h3>
-              @if (!modalService.isEditingDescription() && currentCard.description) {
-                <button class="edit-button" (click)="modalService.startEditingDescription()">
-                  <ng-icon name="heroPencil" size="1rem" class="md:text-xl"></ng-icon>
-                </button>
-              }
-            </div>
-
-            @if (modalService.isEditingDescription() || !currentCard.description) {
-              <textarea
-                class="description-textarea"
-                rows="5"
-                [(ngModel)]="modalService.description"
-                placeholder="Add a more detailed description..."
-              ></textarea>
-              <div class="button-group">
-                <button class="save-button" (click)="modalService.saveDescription()">Save</button>
-                <button class="cancel-button" (click)="modalService.cancelDescription()">
-                  Cancel
-                </button>
-              </div>
-            } @else {
-              <div class="description-display" (click)="modalService.startEditingDescription()">
-                {{ currentCard.description }}
               </div>
             }
           </div>

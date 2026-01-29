@@ -1,5 +1,12 @@
 // core/services/kanban.service.ts
-import { Injectable, inject, signal, computed, Injector, runInInjectionContext } from '@angular/core';
+import {
+  Injectable,
+  inject,
+  signal,
+  computed,
+  Injector,
+  runInInjectionContext,
+} from '@angular/core';
 import {
   Firestore,
   collection,
@@ -14,7 +21,8 @@ import {
   writeBatch,
   Timestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  deleteField
 } from '@angular/fire/firestore';
 import {
   BoardColumn,
@@ -47,12 +55,10 @@ export class KanbanService {
   readonly columnsWithCards = computed(() => {
     const cols = this.columns();
     const allCards = this.cards();
-    
-    return cols.map(col => ({
+
+    return cols.map((col) => ({
       ...col,
-      cards: allCards
-        .filter(card => card.columnId === col.id)
-        .sort((a, b) => a.order - b.order)
+      cards: allCards.filter((card) => card.columnId === col.id).sort((a, b) => a.order - b.order),
     }));
   });
 
@@ -70,7 +76,7 @@ export class KanbanService {
       const columnsQuery = query(
         columnsRef,
         where('boardId', '==', boardId),
-        orderBy('order', 'asc')
+        orderBy('order', 'asc'),
       );
 
       runInInjectionContext(this.injector, () => {
@@ -91,11 +97,7 @@ export class KanbanService {
 
       // Load cards
       const cardsRef = collection(this.firestore, 'cards');
-      const cardsQuery = query(
-        cardsRef,
-        where('boardId', '==', boardId),
-        orderBy('order', 'asc')
-      );
+      const cardsQuery = query(cardsRef, where('boardId', '==', boardId), orderBy('order', 'asc'));
 
       runInInjectionContext(this.injector, () => {
         onSnapshot(cardsQuery, (snapshot) => {
@@ -107,14 +109,16 @@ export class KanbanService {
               ...data,
               createdAt: data['createdAt']?.toDate(),
               updatedAt: data['updatedAt']?.toDate(),
-              comments: data['comments']?.map((c: any) => ({
-                ...c,
-                createdAt: c.createdAt?.toDate()
-              })) || [],
-              attachments: data['attachments']?.map((a: any) => ({
-                ...a,
-                addedAt: a.addedAt?.toDate()
-              })) || []
+              comments:
+                data['comments']?.map((c: any) => ({
+                  ...c,
+                  createdAt: c.createdAt?.toDate(),
+                })) || [],
+              attachments:
+                data['attachments']?.map((a: any) => ({
+                  ...a,
+                  addedAt: a.addedAt?.toDate(),
+                })) || [],
             } as KanbanCard);
           });
           this.cards.set(loadedCards);
@@ -141,9 +145,8 @@ export class KanbanService {
 
   async addColumn(boardId: string, title: string): Promise<void> {
     const currentColumns = this.columns();
-    const maxOrder = currentColumns.length > 0 
-      ? Math.max(...currentColumns.map(c => c.order)) 
-      : -1;
+    const maxOrder =
+      currentColumns.length > 0 ? Math.max(...currentColumns.map((c) => c.order)) : -1;
 
     const newColumn: Omit<BoardColumn, 'id'> = {
       boardId,
@@ -170,8 +173,8 @@ export class KanbanService {
       const batch = writeBatch(this.firestore);
 
       // Delete all cards in this column
-      const cardsToDelete = this.cards().filter(c => c.columnId === columnId);
-      cardsToDelete.forEach(card => {
+      const cardsToDelete = this.cards().filter((c) => c.columnId === columnId);
+      cardsToDelete.forEach((card) => {
         batch.delete(doc(this.firestore, 'cards', card.id));
       });
 
@@ -188,10 +191,8 @@ export class KanbanService {
     const boardId = this.currentBoardId();
     if (!boardId) return;
 
-    const columnCards = this.cards().filter(c => c.columnId === columnId);
-    const maxOrder = columnCards.length > 0
-      ? Math.max(...columnCards.map(c => c.order))
-      : -1;
+    const columnCards = this.cards().filter((c) => c.columnId === columnId);
+    const maxOrder = columnCards.length > 0 ? Math.max(...columnCards.map((c) => c.order)) : -1;
 
     const newCard: Omit<KanbanCard, 'id'> = {
       boardId,
@@ -230,7 +231,7 @@ export class KanbanService {
   async moveCard(event: CardDropEvent): Promise<void> {
     const allCards = this.cards();
     const movedCard = allCards.find(
-      c => c.columnId === event.previousColumnId && c.order === event.previousIndex
+      (c) => c.columnId === event.previousColumnId && c.order === event.previousIndex,
     );
 
     if (!movedCard) return;
@@ -243,29 +244,26 @@ export class KanbanService {
       batch.update(movedCardRef, {
         columnId: event.currentColumnId,
         order: event.currentIndex,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       // Reorder cards in previous column
       const previousColumnCards = allCards
-        .filter(c => c.columnId === event.previousColumnId && c.id !== movedCard.id)
+        .filter((c) => c.columnId === event.previousColumnId && c.id !== movedCard.id)
         .sort((a, b) => a.order - b.order);
 
       previousColumnCards.forEach((card, index) => {
         if (card.order !== index) {
           batch.update(doc(this.firestore, 'cards', card.id), {
             order: index,
-            updatedAt: Timestamp.now()
+            updatedAt: Timestamp.now(),
           });
         }
       });
 
       // Reorder cards in current column
       const currentColumnCards = allCards
-        .filter(c => 
-          c.columnId === event.currentColumnId && 
-          c.id !== movedCard.id
-        )
+        .filter((c) => c.columnId === event.currentColumnId && c.id !== movedCard.id)
         .sort((a, b) => a.order - b.order);
 
       currentColumnCards.splice(event.currentIndex, 0, movedCard);
@@ -273,7 +271,7 @@ export class KanbanService {
         if (card.order !== index) {
           batch.update(doc(this.firestore, 'cards', card.id), {
             order: index,
-            updatedAt: Timestamp.now()
+            updatedAt: Timestamp.now(),
           });
         }
       });
@@ -285,17 +283,26 @@ export class KanbanService {
   }
 
   getCard(cardId: string): KanbanCard | undefined {
-    return this.cards().find(c => c.id === cardId);
+    return this.cards().find((c) => c.id === cardId);
   }
 
   async updateCard(cardId: string, updates: Partial<KanbanCard>): Promise<void> {
     try {
+      // Обрабатываем assignee отдельно
+      const updateData: any = { ...updates };
+
+      // Если assignee === undefined, используем deleteField()
+      if ('assignee' in updates && updates.assignee === undefined) {
+        updateData.assignee = deleteField();
+      }
+
       await updateDoc(doc(this.firestore, 'cards', cardId), {
-        ...updates,
-        updatedAt: Timestamp.now()
+        ...updateData,
+        updatedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error('Error updating card:', error);
+      throw error;
     }
   }
 
@@ -307,12 +314,12 @@ export class KanbanService {
 
     try {
       await updateDoc(doc(this.firestore, 'cards', cardId), {
-        comments: updatedComments.map(c => ({
+        comments: updatedComments.map((c) => ({
           ...c,
-          createdAt: Timestamp.fromDate(c.createdAt)
+          createdAt: Timestamp.fromDate(c.createdAt),
         })),
         commentsCount: updatedComments.length,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -327,12 +334,12 @@ export class KanbanService {
 
     try {
       await updateDoc(doc(this.firestore, 'cards', cardId), {
-        attachments: updatedAttachments.map(a => ({
+        attachments: updatedAttachments.map((a) => ({
           ...a,
-          addedAt: Timestamp.fromDate(a.addedAt)
+          addedAt: Timestamp.fromDate(a.addedAt),
         })),
         attachmentsCount: updatedAttachments.length,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error('Error adding attachment:', error);
@@ -343,16 +350,16 @@ export class KanbanService {
     const card = this.getCard(cardId);
     if (!card) return;
 
-    const updatedAttachments = (card.attachments || []).filter(a => a.id !== attachmentId);
+    const updatedAttachments = (card.attachments || []).filter((a) => a.id !== attachmentId);
 
     try {
       await updateDoc(doc(this.firestore, 'cards', cardId), {
-        attachments: updatedAttachments.map(a => ({
+        attachments: updatedAttachments.map((a) => ({
           ...a,
-          addedAt: Timestamp.fromDate(a.addedAt)
+          addedAt: Timestamp.fromDate(a.addedAt),
         })),
         attachmentsCount: updatedAttachments.length,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error('Error deleting attachment:', error);
@@ -363,7 +370,7 @@ export class KanbanService {
     try {
       await addDoc(collection(this.firestore, 'labels'), {
         ...label,
-        boardId
+        boardId,
       });
     } catch (error) {
       console.error('Error adding label:', error);
@@ -374,9 +381,9 @@ export class KanbanService {
     const card = this.getCard(cardId);
     if (!card) return;
 
-    const hasLabel = card.labels.some(l => l.id === label.id);
+    const hasLabel = card.labels.some((l) => l.id === label.id);
     const updatedLabels = hasLabel
-      ? card.labels.filter(l => l.id !== label.id)
+      ? card.labels.filter((l) => l.id !== label.id)
       : [...card.labels, label];
 
     await this.updateCard(cardId, { labels: updatedLabels });
