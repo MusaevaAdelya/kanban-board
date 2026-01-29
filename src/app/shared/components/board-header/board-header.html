@@ -1,7 +1,9 @@
-<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 bg-neon-leaf py-5 lg:py-10 px-5 border-2 border-secondary">
   <div class="flex flex-col gap-1">
+    <p class="text-sm text-text-secondary">
+        Made with <span class="text-scarlet-rush text-base">❤️</span> by Adelya Musaeva
+      </p>
     <h1 class="text-2xl md:text-4xl font-bold">{{ title() }}</h1>
-    <p class="text-sm md:text-base text-text-secondary">Owner: {{ owner() }}</p>
   </div>
 
   <div class="flex items-center gap-3 md:gap-4">
@@ -25,7 +27,7 @@
 
     <!-- Invite Button -->
     <button
-      class="flex items-center gap-2 bg-accent hover:bg-scarlet-rush hover:text-white border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] px-3 md:px-4 py-2 md:py-3 text-sm md:text-base font-bold transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)]"
+      class="flex items-center gap-2 bg-accent  border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] px-3 md:px-4 py-2 md:py-3 text-sm md:text-base  transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] cursor-pointer"
       (click)="inviteClicked.emit()"
     >
       <ng-icon name="heroUserPlusSolid" size="1.25rem" class="md:text-xl"></ng-icon>
@@ -33,10 +35,9 @@
       <span class="sm:hidden">Invite</span>
     </button>
 
-    <!-- Delete Project Button - только для owner -->
     @if (isOwner()) {
     <button
-      class="flex items-center gap-2 bg-scarlet-rush text-white hover:bg-red-600 border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] px-3 md:px-4 py-2 md:py-3 text-sm md:text-base font-bold transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)]"
+      class="flex items-center gap-2 bg-scarlet-rush text-white hover:bg-red-600 border-2 border-secondary rounded-sm shadow-[3px_3px_0_0_var(--color-secondary)] px-3 md:px-4 py-2 md:py-3 text-sm md:text-base transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_var(--color-secondary)] cursor-pointer"
       (click)="deleteClicked.emit()"
       title="Delete Project"
     >

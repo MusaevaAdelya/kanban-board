@@ -1,9 +1,9 @@
 <main class="min-h-screen p-4 md:p-10 w-full">
   <div class="h-full flex flex-col lg:grid lg:grid-cols-[20rem_1fr] gap-4 md:gap-8 w-full">
     <!-- Mobile Menu Toggle -->
-    @if (authService.currentUser()) {
+    
     <button
-      class="lg:hidden fixed top-4 left-4 z-50 bg-accent border-2 border-secondary rounded-full p-3 shadow-[3px_3px_0_0_var(--color-secondary)]"
+      class="lg:hidden fixed top-4 left-4 z-50 bg-neon-leaf border-2 border-secondary rounded-full p-3 shadow-[3px_3px_0_0_var(--color-secondary)] flex items-center"
       (click)="toggleMobileSidebar()"
     >
       <ng-icon
@@ -11,7 +11,7 @@
         size="1.5rem"
       ></ng-icon>
     </button>
-    }
+    
 
     <!-- Sidebar -->
     <div
@@ -39,7 +39,7 @@
     <!-- Main Content Area -->
     <div class="flex flex-col gap-4 md:gap-6 w-full min-w-0" [class.mt-16]="authService.currentUser()" [class.lg:mt-0]="authService.currentUser()">
       @if (isLoadingProjects()) {
-      <div class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center">
+      <div class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center h-full min-h-[90vh]">
         <div class="text-center">
           <div class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto mb-4"></div>
           <p class="text-text-secondary">Loading projects...</p>
@@ -47,7 +47,7 @@
       </div>
       } @else if (selectedProject(); as project) {
       <div
-        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] px-4 md:px-8 py-4 md:py-6 flex flex-col min-h-0 h-full"
+        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] px-4 md:px-8 py-4 md:py-6 flex flex-col min-h-0 h-full min-h-[90vh]"
       >
         <app-board-header
           [title]="project.title"
@@ -59,7 +59,7 @@
         />
 
         <div
-          class="flex gap-4 md:gap-6 mt-4 md:mt-6 overflow-x-auto min-w-0 pb-6 md:pb-10 columns-container h-full"
+          class="flex min-h-[65vh] gap-4 md:gap-6 mt-9 md:mt-6 overflow-x-auto min-w-0 pb-6 md:pb-10 columns-container h-full"
           appDragScroll
           cdkDropListGroup
         >
@@ -81,7 +81,7 @@
       </div>
       } @else {
       <div
-        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center"
+        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center min-h-[90vh]"
       >
         <div class="text-center">
           <p class="text-text-secondary text-lg md:text-xl mb-4">

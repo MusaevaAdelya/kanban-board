@@ -20,9 +20,9 @@
                 class="label-button"
                 (click)="modalService.showLabelPopup.set(!modalService.showLabelPopup())"
               >
-                <ng-icon name="heroTag" size="1rem" class="md:text-xl"></ng-icon>
+                <ng-icon name="heroTag" size="1.25rem" class="md:text-xl"></ng-icon>
                 <span class="text-sm md:text-base">Labels</span>
-                <ng-icon name="heroPlus" size="1rem" class="md:text-xl"></ng-icon>
+                <ng-icon name="heroPlus" size="1.25rem" class="md:text-xl"></ng-icon>
               </button>
             </div>
 
@@ -42,11 +42,11 @@
                 @if (!modalService.showCreateLabel()) {
                   <div class="popup-header">
                     <button (click)="modalService.showLabelPopup.set(false)" class="back-button">
-                      <ng-icon name="heroArrowLongLeft" size="1rem" class="md:text-xl"></ng-icon>
+                      <ng-icon name="heroArrowLongLeft" size="1.25rem" class="md:text-xl"></ng-icon>
                     </button>
                     <h3 class="text-sm md:text-base">Labels</h3>
                     <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
-                      <ng-icon name="heroXMark" size="1rem" class="md:text-xl"></ng-icon>
+                      <ng-icon name="heroXMark" size="1.25rem" class="md:text-xl"></ng-icon>
                     </button>
                   </div>
                 }
@@ -76,11 +76,11 @@
                   <div class="create-label-form">
                     <div class="popup-header">
                       <button (click)="modalService.showCreateLabel.set(false)" class="back-button">
-                        <ng-icon name="heroArrowLongLeft" size="1rem" class="md:text-xl"></ng-icon>
+                        <ng-icon name="heroArrowLongLeft" size="1.25rem" class="md:text-xl"></ng-icon>
                       </button>
                       <h3 class="text-sm md:text-base">Create label</h3>
                       <button (click)="modalService.showLabelPopup.set(false)" class="close-icon">
-                        <ng-icon name="heroXMark" size="1rem" class="md:text-xl"></ng-icon>
+                        <ng-icon name="heroXMark" size="1.25rem" class="md:text-xl"></ng-icon>
                       </button>
                     </div>
 
@@ -109,37 +109,6 @@
                     </button>
                   </div>
                 }
-              </div>
-            }
-          </div>
-
-          <!-- Description -->
-          <div class="section">
-            <div class="section-header">
-              <h3 class="text-sm md:text-base">Description</h3>
-              @if (!modalService.isEditingDescription() && currentCard.description) {
-                <button class="edit-button" (click)="modalService.startEditingDescription()">
-                  <ng-icon name="heroPencil" size="1rem" class="md:text-xl"></ng-icon>
-                </button>
-              }
-            </div>
-
-            @if (modalService.isEditingDescription() || !currentCard.description) {
-              <textarea
-                class="description-textarea"
-                rows="5"
-                [(ngModel)]="modalService.description"
-                placeholder="Add a more detailed description..."
-              ></textarea>
-              <div class="button-group">
-                <button class="save-button" (click)="modalService.saveDescription()">Save</button>
-                <button class="cancel-button" (click)="modalService.cancelDescription()">
-                  Cancel
-                </button>
-              </div>
-            } @else {
-              <div class="description-display" (click)="modalService.startEditingDescription()">
-                {{ currentCard.description }}
               </div>
             }
           </div>
@@ -176,7 +145,7 @@
                   (click)="modalService.removeAssignee()"
                   title="Remove assignee"
                 >
-                  <ng-icon name="heroXMark" size="1rem"></ng-icon>
+                  <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
                 </button>
               </div>
             } @else {
@@ -186,10 +155,10 @@
             <!-- Assignee Popup -->
             @if (modalService.showAssigneePopup()) {
               <div class="label-popup">
-                <div class="label-popup-header">
+                <div class="label-popup-header flex items-center justify-between">
                   <span>Assign to</span>
-                  <button class="close-popup" (click)="modalService.showAssigneePopup.set(false)">
-                    <ng-icon name="heroXMark" size="1rem"></ng-icon>
+                  <button class="close-popup hover:text-scarlet-rush cursor-pointer" (click)="modalService.showAssigneePopup.set(false)">
+                    <ng-icon name="heroXMark" size="1.25rem"></ng-icon>
                   </button>
                 </div>
 
@@ -215,7 +184,7 @@
                         <span class="collaborator-email">{{ collaborator.email }}</span>
                       </div>
                       @if (currentCard.assignee?.userId === collaborator.userId) {
-                        <ng-icon name="heroCheck" size="1rem" class="text-accent"></ng-icon>
+                        <ng-icon name="heroCheck" size="1.25rem" class="text-accent"></ng-icon>
                       }
                     </button>
                   }
@@ -227,6 +196,39 @@
               </div>
             }
           </div>
+
+          <!-- Description -->
+          <div class="section">
+            <div class="section-header">
+              <h3 class="text-sm md:text-base">Description</h3>
+              @if (!modalService.isEditingDescription() && currentCard.description) {
+                <button class="edit-button" (click)="modalService.startEditingDescription()">
+                  <ng-icon name="heroPencil" size="1.25rem" class="md:text-xl"></ng-icon>
+                </button>
+              }
+            </div>
+
+            @if (modalService.isEditingDescription() || !currentCard.description) {
+              <textarea
+                class="description-textarea"
+                rows="5"
+                [(ngModel)]="modalService.description"
+                placeholder="Add a more detailed description..."
+              ></textarea>
+              <div class="button-group">
+                <button class="save-button" (click)="modalService.saveDescription()">Save</button>
+                <button class="cancel-button" (click)="modalService.cancelDescription()">
+                  Cancel
+                </button>
+              </div>
+            } @else {
+              <div class="description-display" (click)="modalService.startEditingDescription()">
+                {{ currentCard.description }}
+              </div>
+            }
+          </div>
+
+          
 
           <!-- Attachments -->
           <!-- В секции Attachments -->
@@ -282,7 +284,7 @@
                       <button class="action-menu">
                         <ng-icon
                           name="heroEllipsisHorizontal"
-                          size="1rem"
+                          size="1.25rem"
                           class="md:text-xl"
                         ></ng-icon>
                       </button>
@@ -306,7 +308,7 @@
         <!-- Right Section - Comments -->
         <div class="right-section">
           <div class="comments-header">
-            <ng-icon name="heroChatBubbleLeftRight" size="1rem" class="md:text-xl"></ng-icon>
+            <ng-icon name="heroChatBubbleLeftRight" size="1.25rem" class="md:text-xl"></ng-icon>
             <h3 class="text-sm md:text-base">Comments and activity</h3>
           </div>
 
