@@ -18,12 +18,19 @@ export interface Attachment {
   id: string;
   name: string;
   url: string;
-  publicId: string; // Cloudinary public ID
+  publicId: string;
   type: string;
   size: number;
   addedAt: Date;
   addedBy: string;
   addedByUserId: string;
+}
+
+export interface Assignee {
+  userId: string;
+  photoURL: string;
+  displayName: string;
+  email: string;
 }
 
 export interface KanbanCard {
@@ -33,11 +40,7 @@ export interface KanbanCard {
   title: string;
   description?: string;
   labels: Label[];
-  assignee?: {
-    userId: string;
-    photoURL: string;
-    displayName: string;
-  };
+  assignee?: Assignee; 
   order: number;
   commentsCount: number;
   attachmentsCount: number;

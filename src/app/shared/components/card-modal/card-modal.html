@@ -113,6 +113,90 @@
             }
           </div>
 
+          <!-- Assignee Section -->
+          <div class="section">
+            <div class="section-header">
+              <ng-icon name="heroUser" size="1.25rem" class="md:text-2xl"></ng-icon>
+              <h3 class="text-sm md:text-base">Assignee</h3>
+              <button
+                class="add-button"
+                (click)="modalService.showAssigneePopup.set(!modalService.showAssigneePopup())"
+              >
+                {{ currentCard.assignee ? 'Change' : 'Assign' }}
+              </button>
+            </div>
+
+            <!-- Current Assignee -->
+            @if (currentCard.assignee) {
+              <div class="assignee-display">
+                <div class="assignee-avatar">
+                  <img
+                    [src]="currentCard.assignee.photoURL"
+                    [alt]="currentCard.assignee.displayName"
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+                <div class="assignee-info">
+                  <p class="assignee-name">{{ currentCard.assignee.displayName }}</p>
+                  <p class="assignee-email">{{ currentCard.assignee.email }}</p>
+                </div>
+                <button
+                  class="remove-assignee"
+                  (click)="modalService.removeAssignee()"
+                  title="Remove assignee"
+                >
+                  <ng-icon name="heroXMark" size="1rem"></ng-icon>
+                </button>
+              </div>
+            } @else {
+              <p class="text-sm text-text-secondary">No one assigned</p>
+            }
+
+            <!-- Assignee Popup -->
+            @if (modalService.showAssigneePopup()) {
+              <div class="label-popup">
+                <div class="label-popup-header">
+                  <span>Assign to</span>
+                  <button class="close-popup" (click)="modalService.showAssigneePopup.set(false)">
+                    <ng-icon name="heroXMark" size="1rem"></ng-icon>
+                  </button>
+                </div>
+
+                <div class="collaborators-list">
+                  @for (
+                    collaborator of modalService.availableCollaborators();
+                    track collaborator.userId
+                  ) {
+                    <button
+                      class="collaborator-item"
+                      [class.selected]="currentCard.assignee?.userId === collaborator.userId"
+                      (click)="modalService.assignUser(collaborator)"
+                    >
+                      <div class="collaborator-avatar">
+                        <img
+                          [src]="collaborator.photoURL"
+                          [alt]="collaborator.displayName"
+                          class="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div class="collaborator-info">
+                        <span class="collaborator-name">{{ collaborator.displayName }}</span>
+                        <span class="collaborator-email">{{ collaborator.email }}</span>
+                      </div>
+                      @if (currentCard.assignee?.userId === collaborator.userId) {
+                        <ng-icon name="heroCheck" size="1rem" class="text-accent"></ng-icon>
+                      }
+                    </button>
+                  }
+
+                  @if (modalService.availableCollaborators().length === 0) {
+                    <p class="text-sm text-text-secondary p-2">No collaborators available</p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
           <!-- Description -->
           <div class="section">
             <div class="section-header">

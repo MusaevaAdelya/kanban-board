@@ -11,7 +11,9 @@ import {
   heroTrash,
   heroPlus,
   heroArrowLongLeft,
-  heroArrowDown, // Добавим эту иконку
+  heroArrowDown,
+  heroUser,
+  heroCheck,
 } from '@ng-icons/heroicons/outline';
 import { FormsModule } from '@angular/forms';
 import { CardModalService } from '../../../core/services/card-modal.service';
@@ -34,7 +36,9 @@ import { Label, Attachment } from '../../../core/models/kanban.model';
       heroTrash,
       heroPlus,
       heroArrowLongLeft,
-      heroArrowDown, // Добавим
+      heroArrowDown,
+      heroUser,
+      heroCheck,
     }),
   ],
 })
@@ -70,7 +74,6 @@ export class CardModal {
     const file = input.files[0];
     await this.modalService.handleFileSelect(file);
     
-    // Reset input value to allow uploading the same file again
     input.value = '';
   }
 

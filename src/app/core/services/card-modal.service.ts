@@ -4,7 +4,8 @@ import { KanbanService } from './kanban.service';
 import { AuthService } from './auth.service';
 import { CloudinaryService } from './cloudinary.service';
 import { ToastService } from './toast.service';
-import { Label, Comment, Attachment } from '../models/kanban.model';
+import { BoardService } from './board.service';
+import { Label, Comment, Attachment, Assignee } from '../models/kanban.model';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +15,7 @@ export class CardModalService {
   private authService = inject(AuthService);
   private cloudinaryService = inject(CloudinaryService);
   private toastService = inject(ToastService);
+  private boardService = inject(BoardService);
 
   // State
   private _cardId = signal<string | null>(null);
@@ -23,6 +25,7 @@ export class CardModalService {
   newComment = signal('');
   showLabelPopup = signal(false);
   showCreateLabel = signal(false);
+  showAssigneePopup = signal(false);
   newLabelName = signal('');
   newLabelColor = signal('#FFD700');
   isUploadingFile = signal(false);
@@ -34,14 +37,46 @@ export class CardModalService {
     return this.kanbanService.getCard(cardId);
   });
 
+  // Available collaborators for assignment
+  availableCollaborators = computed(() => {
+    const card = this.card();
+    if (!card) return [];
+
+    const board = this.boardService.allBoards().find((b) => b.id === card.boardId);
+    if (!board) return [];
+
+    return board.collaborators.map((c) => ({
+      userId: c.userId,
+      email: c.email,
+      displayName: c.displayName || c.email.split('@')[0],
+      photoURL: c.photoURL || 'https://i.pravatar.cc/150?img=0',
+    }));
+  });
+
   availableLabels = this.kanbanService.allLabels;
   currentUser = this.authService.currentUser;
 
   colors = [
-    '#9ACD32', '#FFD700', '#FFA500', '#FF6B6B', '#DA70D6',
-    '#2E7D32', '#F9A825', '#FF8A00', '#D32F2F', '#8E24AA',
-    '#B3E5FC', '#81D4FA', '#A5D6A7', '#F8BBD0', '#E0E0E0',
-    '#2196F3', '#00ACC1', '#7CB342', '#EC407A', '#757575',
+    '#9ACD32',
+    '#FFD700',
+    '#FFA500',
+    '#FF6B6B',
+    '#DA70D6',
+    '#2E7D32',
+    '#F9A825',
+    '#FF8A00',
+    '#D32F2F',
+    '#8E24AA',
+    '#B3E5FC',
+    '#81D4FA',
+    '#A5D6A7',
+    '#F8BBD0',
+    '#E0E0E0',
+    '#2196F3',
+    '#00ACC1',
+    '#7CB342',
+    '#EC407A',
+    '#757575',
   ];
 
   // Methods
@@ -66,6 +101,7 @@ export class CardModalService {
     this.newComment.set('');
     this.showLabelPopup.set(false);
     this.showCreateLabel.set(false);
+    this.showAssigneePopup.set(false);
     this.newLabelName.set('');
     this.newLabelColor.set('#FFD700');
   }
@@ -136,6 +172,33 @@ export class CardModalService {
     this.showCreateLabel.set(false);
   }
 
+  async assignUser(collaborator: Assignee): Promise<void> {
+    const cardId = this._cardId();
+    if (!cardId) return;
+
+    const currentCard = this.card();
+
+    // Toggle assignee - if same user, remove assignment
+    if (currentCard?.assignee?.userId === collaborator.userId) {
+      await this.kanbanService.updateCard(cardId, { assignee: undefined });
+      this.toastService.info('Assignee removed');
+    } else {
+      await this.kanbanService.updateCard(cardId, { assignee: collaborator });
+      this.toastService.success(`Assigned to ${collaborator.displayName}`);
+    }
+
+    this.showAssigneePopup.set(false);
+  }
+
+  async removeAssignee(): Promise<void> {
+    const cardId = this._cardId();
+    if (!cardId) return;
+
+    await this.kanbanService.updateCard(cardId, { assignee: undefined });
+    this.toastService.info('Assignee removed');
+    this.showAssigneePopup.set(false);
+  }
+
   async handleFileSelect(file: File): Promise<void> {
     const cardId = this._cardId();
 
@@ -191,35 +254,40 @@ export class CardModalService {
 
   async downloadAttachment(attachment: Attachment): Promise<void> {
     try {
-      // Fetch the file as blob
-      const response = await fetch(attachment.url);
-      
+      let downloadUrl = attachment.url;
+
+      if (attachment.url.includes('cloudinary.com')) {
+        const urlParts = attachment.url.split('/upload/');
+        if (urlParts.length === 2) {
+          downloadUrl = `${urlParts[0]}/upload/fl_attachment/${urlParts[1]}`;
+        }
+      }
+
+      const response = await fetch(downloadUrl);
+
       if (!response.ok) {
         throw new Error('Failed to download file');
       }
 
       const blob = await response.blob();
-      
-      // Create blob URL
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      // Create temporary link and trigger download
+
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = attachment.name;
       link.style.display = 'none';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Clean up blob URL
+
       window.URL.revokeObjectURL(blobUrl);
-      
+
       this.toastService.success('Download started');
     } catch (error) {
       console.error('Error downloading file:', error);
-      this.toastService.error('Failed to download file');
+      window.open(attachment.url, '_blank');
+      this.toastService.info('File opened in new tab');
     }
   }
 
