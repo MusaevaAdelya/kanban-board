@@ -16,7 +16,10 @@
           <!-- Labels -->
           <div class="section">
             <div class="section-header">
-              <button class="label-button" (click)="modalService.showLabelPopup.set(!modalService.showLabelPopup())">
+              <button
+                class="label-button"
+                (click)="modalService.showLabelPopup.set(!modalService.showLabelPopup())"
+              >
                 <ng-icon name="heroTag" size="1rem" class="md:text-xl"></ng-icon>
                 <span class="text-sm md:text-base">Labels</span>
                 <ng-icon name="heroPlus" size="1rem" class="md:text-xl"></ng-icon>
@@ -62,7 +65,10 @@
                         </span>
                       </label>
                     }
-                    <button class="create-label-button" (click)="modalService.showCreateLabel.set(true)">
+                    <button
+                      class="create-label-button"
+                      (click)="modalService.showCreateLabel.set(true)"
+                    >
                       Create a new label
                     </button>
                   </div>
@@ -98,7 +104,9 @@
                       }
                     </div>
 
-                    <button class="create-button" (click)="modalService.createLabel()">Create</button>
+                    <button class="create-button" (click)="modalService.createLabel()">
+                      Create
+                    </button>
                   </div>
                 }
               </div>
@@ -125,7 +133,9 @@
               ></textarea>
               <div class="button-group">
                 <button class="save-button" (click)="modalService.saveDescription()">Save</button>
-                <button class="cancel-button" (click)="modalService.cancelDescription()">Cancel</button>
+                <button class="cancel-button" (click)="modalService.cancelDescription()">
+                  Cancel
+                </button>
               </div>
             } @else {
               <div class="description-display" (click)="modalService.startEditingDescription()">
@@ -135,34 +145,69 @@
           </div>
 
           <!-- Attachments -->
+          <!-- В секции Attachments -->
           <div class="section">
             <div class="section-header">
               <ng-icon name="heroPaperClip" size="1.25rem" class="md:text-2xl"></ng-icon>
               <h3 class="text-sm md:text-base">Attachments</h3>
-              <label class="add-button">
-                <input type="file" hidden (change)="handleFileSelect($event)" />
-                Add
+              <label
+                class="add-button"
+                [class.opacity-50]="modalService.isUploadingFile()"
+                [class.cursor-not-allowed]="modalService.isUploadingFile()"
+              >
+                <input
+                  type="file"
+                  hidden
+                  (change)="handleFileSelect($event)"
+                  [disabled]="modalService.isUploadingFile()"
+                />
+                {{ modalService.isUploadingFile() ? 'Uploading...' : 'Add' }}
               </label>
             </div>
+
+            @if (modalService.isUploadingFile()) {
+              <div class="flex items-center gap-2 p-2 text-sm text-blue-600">
+                <div
+                  class="animate-spin rounded-full h-4 w-4 border-2 border-accent border-t-transparent"
+                ></div>
+                <span>Uploading file...</span>
+              </div>
+            }
 
             @if (currentCard.attachments && currentCard.attachments.length > 0) {
               <div class="attachments-list">
                 @for (attachment of currentCard.attachments; track attachment.id) {
                   <div class="attachment-item">
                     <div class="attachment-icon">
-                      {{ attachment.type.includes('pdf') ? 'PDF' : 'FILE' }}
+                      {{
+                        attachment.type.includes('pdf')
+                          ? 'PDF'
+                          : attachment.type.includes('image')
+                            ? 'IMG'
+                            : 'FILE'
+                      }}
                     </div>
                     <div class="attachment-info">
-                      <p class="attachment-name">{{ attachment.name }}</p>
-                      <p class="attachment-meta">added {{ modalService.getTimeAgo(attachment.addedAt) }}</p>
+                      <p class="attachment-name" [title]="attachment.name">{{ attachment.name }}</p>
+                      <p class="attachment-meta">
+                        {{ modalService.formatFileSize(attachment.size) }} • added
+                        {{ modalService.getTimeAgo(attachment.addedAt) }}
+                      </p>
                     </div>
                     <div class="attachment-actions">
                       <button class="action-menu">
-                        <ng-icon name="heroEllipsisHorizontal" size="1rem" class="md:text-xl"></ng-icon>
+                        <ng-icon
+                          name="heroEllipsisHorizontal"
+                          size="1rem"
+                          class="md:text-xl"
+                        ></ng-icon>
                       </button>
                       <div class="action-dropdown">
                         <button (click)="downloadAttachment(attachment)">Download</button>
-                        <button class="delete-action" (click)="modalService.deleteAttachment(attachment.id)">
+                        <button
+                          class="delete-action"
+                          (click)="modalService.deleteAttachment(attachment.id)"
+                        >
                           Delete
                         </button>
                       </div>
@@ -188,8 +233,8 @@
             placeholder="Write a comment..."
           ></textarea>
 
-          <button 
-            class="add-comment-button" 
+          <button
+            class="add-comment-button"
             (click)="modalService.addComment()"
             [disabled]="!modalService.newComment().trim()"
           >
@@ -203,7 +248,9 @@
                 <div class="comment-content">
                   <div class="comment-header">
                     <span class="comment-author">{{ comment.userName }}</span>
-                    <span class="comment-time">{{ modalService.getTimeAgo(comment.createdAt) }}</span>
+                    <span class="comment-time">{{
+                      modalService.getTimeAgo(comment.createdAt)
+                    }}</span>
                   </div>
                   <p class="comment-text">{{ comment.text }}</p>
                 </div>

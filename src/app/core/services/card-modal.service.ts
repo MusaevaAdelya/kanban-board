@@ -3,6 +3,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { KanbanService } from './kanban.service';
 import { AuthService } from './auth.service';
 import { CloudinaryService } from './cloudinary.service';
+import { ToastService } from './toast.service';
 import { Label, Comment, Attachment } from '../models/kanban.model';
 
 @Injectable({
@@ -12,6 +13,7 @@ export class CardModalService {
   private kanbanService = inject(KanbanService);
   private authService = inject(AuthService);
   private cloudinaryService = inject(CloudinaryService);
+  private toastService = inject(ToastService);
 
   // State
   private _cardId = signal<string | null>(null);
@@ -140,6 +142,7 @@ export class CardModalService {
     if (!cardId) return;
 
     this.isUploadingFile.set(true);
+    this.toastService.info('Uploading file...');
 
     try {
       const { url, publicId } = await this.cloudinaryService.uploadFile(file);
@@ -158,9 +161,10 @@ export class CardModalService {
       };
 
       await this.kanbanService.addAttachment(cardId, attachment);
+      this.toastService.success('File uploaded successfully!');
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file. Please try again.');
+      this.toastService.error('Failed to upload file. Please try again.');
     } finally {
       this.isUploadingFile.set(false);
     }
@@ -170,7 +174,10 @@ export class CardModalService {
     const cardId = this._cardId();
     if (!cardId) return;
 
-    await this.kanbanService.deleteAttachment(cardId, attachmentId);
+    if (confirm('Are you sure you want to delete this attachment?')) {
+      await this.kanbanService.deleteAttachment(cardId, attachmentId);
+      this.toastService.success('Attachment deleted');
+    }
   }
 
   getTimeAgo(date: Date): string {
@@ -182,14 +189,47 @@ export class CardModalService {
     return `${Math.floor(seconds / 86400)} days ago`;
   }
 
-  downloadAttachment(attachment: Attachment): void {
-    const link = document.createElement('a');
-    link.href = attachment.url;
-    link.download = attachment.name;
-    link.target = '_blank';
+  async downloadAttachment(attachment: Attachment): Promise<void> {
+    try {
+      // Fetch the file as blob
+      const response = await fetch(attachment.url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = await response.blob();
+      
+      // Create blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = attachment.name;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl);
+      
+      this.toastService.success('Download started');
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      this.toastService.error('Failed to download file');
+    }
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
 }

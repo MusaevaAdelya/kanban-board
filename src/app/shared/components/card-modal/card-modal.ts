@@ -11,18 +11,18 @@ import {
   heroTrash,
   heroPlus,
   heroArrowLongLeft,
+  heroArrowDown, // Добавим эту иконку
 } from '@ng-icons/heroicons/outline';
 import { FormsModule } from '@angular/forms';
 import { CardModalService } from '../../../core/services/card-modal.service';
 import { Label, Attachment } from '../../../core/models/kanban.model';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-card-modal',
   standalone: true,
   templateUrl: './card-modal.html',
   styleUrl: './card-modal.scss',
-  imports: [NgIcon, FormsModule, CommonModule],
+  imports: [NgIcon, FormsModule],
   providers: [
     provideIcons({
       heroXMark,
@@ -34,6 +34,7 @@ import { CommonModule } from '@angular/common';
       heroTrash,
       heroPlus,
       heroArrowLongLeft,
+      heroArrowDown, // Добавим
     }),
   ],
 })
@@ -64,17 +65,20 @@ export class CardModal {
 
   async handleFileSelect(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    if (!input.files) return;
+    if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
     await this.modalService.handleFileSelect(file);
+    
+    // Reset input value to allow uploading the same file again
+    input.value = '';
   }
 
   async toggleLabel(label: Label): Promise<void> {
     await this.modalService.toggleLabel(label);
   }
 
-  downloadAttachment(attachment: Attachment): void {
-    this.modalService.downloadAttachment(attachment);
+  async downloadAttachment(attachment: Attachment): Promise<void> {
+    await this.modalService.downloadAttachment(attachment);
   }
 }
