@@ -5,8 +5,7 @@ export interface Card {
   title: string;
   description: string;
   order: number;
-  labels: string[]; // label IDs
-  isTestData: boolean;
+  labels: string[]; 
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,8 +1,14 @@
-import { Component, input, output, signal,inject } from '@angular/core';
+// shared/components/column/column.ts
+import { Component, input, output, signal, inject } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroEllipsisHorizontal, heroXMark } from '@ng-icons/heroicons/outline';
 import { KanbanCard } from '../kanban-card/kanban-card';
-import { CdkDropList, CdkDrag, moveItemInArray, transferArrayItem, CdkDragDrop } from '@angular/cdk/drag-drop';
+import {
+  CdkDropList,
+  CdkDrag,
+  CdkDragDrop,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { KanbanService } from '../../../core/services/kanban.service';
 
@@ -29,7 +35,7 @@ interface Label {
   standalone: true,
   imports: [NgIcon, KanbanCard, CdkDropList, CdkDrag, FormsModule],
   providers: [provideIcons({ heroEllipsisHorizontal, heroXMark })],
-  templateUrl: './column.html'
+  templateUrl: './column.html',
 })
 export class Column {
   columnId = input.required<string>();
@@ -38,31 +44,43 @@ export class Column {
   color = input<string>('bg-scarlet-rush');
   isAddingCard = signal(false);
   newCardTitle = signal('');
-  
+
   menuClicked = output<string>();
   addCard = output<string>();
   cardClicked = output<string>();
-  cardDropped = output<{ previousColumnId: string; currentColumnId: string; previousIndex: number; currentIndex: number }>();
+  cardDropped = output<{
+    previousColumnId: string;
+    currentColumnId: string;
+    previousIndex: number;
+    currentIndex: number;
+  }>();
 
   private kanbanService = inject(KanbanService);
 
   onDrop(event: CdkDragDrop<Card[]>) {
     if (event.previousContainer === event.container) {
       // Перемещение внутри одной колонки
-      const cards = [...this.cards()];
-      moveItemInArray(cards, event.previousIndex, event.currentIndex);
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      
+      // Emit event to save to Firestore
+      this.cardDropped.emit({
+        previousColumnId: event.previousContainer.id,
+        currentColumnId: event.container.id,
+        previousIndex: event.previousIndex,
+        currentIndex: event.currentIndex,
+      });
     } else {
       // Перемещение между колонками
       this.cardDropped.emit({
         previousColumnId: event.previousContainer.id,
         currentColumnId: event.container.id,
         previousIndex: event.previousIndex,
-        currentIndex: event.currentIndex
+        currentIndex: event.currentIndex,
       });
     }
   }
 
-  handleAddCard() {
+  async handleAddCard() {
     const title = this.newCardTitle().trim();
     if (title) {
       this.addCard.emit(title);
@@ -76,7 +94,9 @@ export class Column {
     this.isAddingCard.set(false);
   }
 
-  handleDeleteCard(cardId:string){
-    this.kanbanService.deleteCard(this.columnId(), cardId)
+  async handleDeleteCard(cardId: string) {
+    if (confirm('Are you sure you want to delete this card?')) {
+      await this.kanbanService.deleteCard(cardId);
+    }
   }
 }

@@ -1,19 +1,21 @@
+// core/services/card-modal.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { KanbanService } from './kanban.service';
 import { AuthService } from './auth.service';
-import { Label, Comment, Attachment } from "../models/kanban.model";
+import { CloudinaryService } from './cloudinary.service';
+import { Label, Comment, Attachment } from '../models/kanban.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CardModalService {
   private kanbanService = inject(KanbanService);
   private authService = inject(AuthService);
+  private cloudinaryService = inject(CloudinaryService);
 
   // State
-  private _columnId = signal<string | null>(null);
   private _cardId = signal<string | null>(null);
-  
+
   description = signal('');
   isEditingDescription = signal(false);
   newComment = signal('');
@@ -21,13 +23,13 @@ export class CardModalService {
   showCreateLabel = signal(false);
   newLabelName = signal('');
   newLabelColor = signal('#FFD700');
+  isUploadingFile = signal(false);
 
   // Computed
   card = computed(() => {
-    const columnId = this._columnId();
     const cardId = this._cardId();
-    if (!columnId || !cardId) return null;
-    return this.kanbanService.getCard(columnId, cardId);
+    if (!cardId) return null;
+    return this.kanbanService.getCard(cardId);
   });
 
   availableLabels = this.kanbanService.allLabels;
@@ -37,24 +39,22 @@ export class CardModalService {
     '#9ACD32', '#FFD700', '#FFA500', '#FF6B6B', '#DA70D6',
     '#2E7D32', '#F9A825', '#FF8A00', '#D32F2F', '#8E24AA',
     '#B3E5FC', '#81D4FA', '#A5D6A7', '#F8BBD0', '#E0E0E0',
-    '#2196F3', '#00ACC1', '#7CB342', '#EC407A', '#757575'
+    '#2196F3', '#00ACC1', '#7CB342', '#EC407A', '#757575',
   ];
 
   // Methods
-  openCard(columnId: string, cardId: string): void {
-    this._columnId.set(columnId);
+  openCard(cardId: string): void {
     this._cardId.set(cardId);
-    
+
     const currentCard = this.card();
     if (currentCard) {
       this.description.set(currentCard.description || '');
     }
-    
+
     this.resetForm();
   }
 
   closeCard(): void {
-    this._columnId.set(null);
     this._cardId.set(null);
     this.resetForm();
   }
@@ -68,13 +68,12 @@ export class CardModalService {
     this.newLabelColor.set('#FFD700');
   }
 
-  saveDescription(): void {
-    const columnId = this._columnId();
+  async saveDescription(): Promise<void> {
     const cardId = this._cardId();
-    if (!columnId || !cardId) return;
+    if (!cardId) return;
 
-    this.kanbanService.updateCard(columnId, cardId, {
-      description: this.description()
+    await this.kanbanService.updateCard(cardId, {
+      description: this.description(),
     });
     this.isEditingDescription.set(false);
   }
@@ -89,46 +88,45 @@ export class CardModalService {
     this.isEditingDescription.set(true);
   }
 
-  addComment(): void {
+  async addComment(): Promise<void> {
     const text = this.newComment().trim();
-    const columnId = this._columnId();
     const cardId = this._cardId();
-    
-    if (!text || !this.currentUser() || !columnId || !cardId) return;
 
-    const user = this.currentUser()!;
+    if (!text || !cardId) return;
+
+    const user = this.currentUser();
     const comment: Comment = {
       id: `comment-${Date.now()}`,
-      userId: user.uid,
-      userName: user.displayName || 'Anonymous',
-      userPhotoURL: user.photoURL || 'https://i.pravatar.cc/150?img=0',
+      userId: user?.uid || 'anonymous',
+      userName: user?.displayName || 'Anonymous',
+      userPhotoURL: user?.photoURL || 'https://i.pravatar.cc/150?img=0',
       text,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
-    this.kanbanService.addComment(columnId, cardId, comment);
+    await this.kanbanService.addComment(cardId, comment);
     this.newComment.set('');
   }
 
-  toggleLabel(label: Label): void {
-    const columnId = this._columnId();
+  async toggleLabel(label: Label): Promise<void> {
     const cardId = this._cardId();
-    if (!columnId || !cardId) return;
+    if (!cardId) return;
 
-    this.kanbanService.toggleCardLabel(columnId, cardId, label);
+    await this.kanbanService.toggleCardLabel(cardId, label);
   }
 
   isLabelSelected(labelId: string): boolean {
-    return this.card()?.labels.some(l => l.id === labelId) || false;
+    return this.card()?.labels.some((l) => l.id === labelId) || false;
   }
 
-  createLabel(): void {
+  async createLabel(): Promise<void> {
     const name = this.newLabelName().trim();
-    if (!name) return;
+    const card = this.card();
+    if (!name || !card) return;
 
-    this.kanbanService.addLabel({
+    await this.kanbanService.addLabel(card.boardId, {
       name,
-      color: this.newLabelColor()
+      color: this.newLabelColor(),
     });
 
     this.newLabelName.set('');
@@ -136,30 +134,43 @@ export class CardModalService {
     this.showCreateLabel.set(false);
   }
 
-  handleFileSelect(file: File): void {
-    const columnId = this._columnId();
+  async handleFileSelect(file: File): Promise<void> {
     const cardId = this._cardId();
-    
-    if (!this.currentUser() || !columnId || !cardId) return;
 
-    const attachment: Attachment = {
-      id: `attachment-${Date.now()}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      type: file.type,
-      addedAt: new Date(),
-      addedBy: this.currentUser()!.displayName || 'Anonymous'
-    };
+    if (!cardId) return;
 
-    this.kanbanService.addAttachment(columnId, cardId, attachment);
+    this.isUploadingFile.set(true);
+
+    try {
+      const { url, publicId } = await this.cloudinaryService.uploadFile(file);
+
+      const user = this.currentUser();
+      const attachment: Attachment = {
+        id: `attachment-${Date.now()}`,
+        name: file.name,
+        url,
+        publicId,
+        type: file.type,
+        size: file.size,
+        addedAt: new Date(),
+        addedBy: user?.displayName || 'Anonymous',
+        addedByUserId: user?.uid || 'anonymous',
+      };
+
+      await this.kanbanService.addAttachment(cardId, attachment);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      this.isUploadingFile.set(false);
+    }
   }
 
-  deleteAttachment(attachmentId: string): void {
-    const columnId = this._columnId();
+  async deleteAttachment(attachmentId: string): Promise<void> {
     const cardId = this._cardId();
-    if (!columnId || !cardId) return;
+    if (!cardId) return;
 
-    this.kanbanService.deleteAttachment(columnId, cardId, attachmentId);
+    await this.kanbanService.deleteAttachment(cardId, attachmentId);
   }
 
   getTimeAgo(date: Date): string {
@@ -172,18 +183,13 @@ export class CardModalService {
   }
 
   downloadAttachment(attachment: Attachment): void {
-  // Создаем ссылку для скачивания
-  const link = document.createElement('a');
-  link.href = attachment.url;
-  link.download = attachment.name;
-  
-  // Для файлов, которые могут открыться в браузере (PDF, изображения),
-  // добавляем атрибут для принудительной загрузки
-  link.target = '_blank';
-  
-  // Добавляем ссылку в DOM, кликаем и удаляем
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+    const link = document.createElement('a');
+    link.href = attachment.url;
+    link.download = attachment.name;
+    link.target = '_blank';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }

@@ -1,4 +1,5 @@
-import { Component, signal, inject } from '@angular/core';
+// app.component.ts
+import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { provideIcons, NgIcon } from '@ng-icons/core';
 import { heroPlus, heroBars3, heroXMark } from '@ng-icons/heroicons/outline';
 import { AuthService } from './core/services/auth.service';
@@ -10,13 +11,9 @@ import { CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { CardModal } from './shared/components/card-modal/card-modal';
 import { KanbanService } from './core/services/kanban.service';
 import { ProjectService } from './core/services/project.service';
+import { BoardService } from './core/services/board.service';
 import { Sidebar } from './shared/components/sidebar/sidebar';
-
-interface Collaborator {
-  id: string;
-  photoURL: string;
-  displayName: string;
-}
+import { computed, effect } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -31,72 +28,148 @@ interface Collaborator {
     CdkDropListGroup,
     CardModal,
     Sidebar,
-    NgIcon
+    NgIcon,
   ],
   providers: [provideIcons({ heroPlus, heroBars3, heroXMark })],
 })
-export class App {
-  private authService = inject(AuthService);
+export class App implements OnInit, OnDestroy {
+  protected authService = inject(AuthService);
   private kanbanService = inject(KanbanService);
   private projectService = inject(ProjectService);
-
-  mockCollaborators = signal<Collaborator[]>([
-    { id: '1', photoURL: 'https://i.pravatar.cc/150?img=1', displayName: 'Alice Johnson' },
-    { id: '2', photoURL: 'https://i.pravatar.cc/150?img=2', displayName: 'Bob Smith' },
-    { id: '3', photoURL: 'https://i.pravatar.cc/150?img=3', displayName: 'Carol White' },
-    { id: '4', photoURL: 'https://i.pravatar.cc/150?img=4', displayName: 'David Brown' },
-    { id: '5', photoURL: 'https://i.pravatar.cc/150?img=5', displayName: 'Eva Green' },
-  ]);
+  private boardService = inject(BoardService);
 
   isMobileSidebarOpen = this.projectService.isMobileSidebarOpen;
+  isLoadingProjects = signal(false);
 
-  toggleMobileSidebar(): void {
-    this.projectService.toggleMobileSidebar()
-  }
-
-  mockColumns = this.kanbanService.allColumns;
+  columnsWithCards = this.kanbanService.columnsWithCards;
   selectedProject = this.projectService.selectedProject;
 
   selectedCardId = signal<string | null>(null);
-  selectedColumnId = signal<string | null>(null);
 
-  generateTestData(): void {
-    console.log('Generate test data');
+  // Computed collaborators from selected board
+  collaborators = computed(() => {
+    const board = this.boardService.selectedBoard();
+    if (!board) return [];
+    
+    return board.collaborators.map(c => ({
+      id: c.userId,
+      photoURL: c.photoURL || 'https://i.pravatar.cc/150?img=0',
+      displayName: c.displayName || c.email.split('@')[0]
+    }));
+  });
+
+  constructor() {
+    // Настраиваем callback для загрузки проектов после логина
+    this.authService.setOnLoginCallback(async () => {
+      await this.loadProjectsAndBoard();
+    });
+
+    // Отслеживаем изменения currentUser
+    effect(async () => {
+      const user = this.authService.currentUser();
+      if (user) {
+        // Пользователь залогинился
+        await this.loadProjectsAndBoard();
+      } else {
+        // Пользователь разлогинился - очищаем все данные
+        this.clearAllData();
+      }
+    });
   }
 
-  handleInvite(): void {
-    console.log('Invite people clicked');
+  async ngOnInit() {
+    // Загружаем проекты при инициализации (если пользователь уже залогинен)
+    const user = this.authService.currentUser();
+    if (user) {
+      await this.loadProjectsAndBoard();
+    }
   }
 
-  handleColumnMenu(columnId: string): void {
-    this.kanbanService.deleteColumn(columnId);
+  ngOnDestroy() {
+    this.kanbanService.cleanup();
   }
 
-  handleAddCard(columnId: string, cardTitle: string): void {
-    this.kanbanService.addCard(columnId, cardTitle);
+  private async loadProjectsAndBoard(): Promise<void> {
+    this.isLoadingProjects.set(true);
+    try {
+      await this.projectService.loadProjects();
+      
+      const selectedBoardId = this.boardService.currentBoardId();
+      if (selectedBoardId) {
+        await this.kanbanService.loadBoard(selectedBoardId);
+      } else {
+        const boards = this.boardService.allBoards();
+        if (boards.length > 0) {
+          this.boardService.selectBoard(boards[0].id);
+          await this.kanbanService.loadBoard(boards[0].id);
+        }
+      }
+    } finally {
+      this.isLoadingProjects.set(false);
+    }
   }
 
-  handleCardClick(columnId: string, cardId: string): void {
-    this.selectedColumnId.set(columnId);
+  private clearAllData(): void {
+    // Очищаем все данные при logout
+    this.kanbanService.cleanup();
+    this.boardService.clearBoards();
+    this.selectedCardId.set(null);
+    this.isMobileSidebarOpen.set(false);
+  }
+
+  toggleMobileSidebar(): void {
+    this.projectService.toggleMobileSidebar();
+  }
+
+  async handleInvite(): Promise<void> {
+    const board = this.boardService.selectedBoard();
+    if (!board) return;
+
+    const email = prompt('Enter collaborator email:');
+    if (!email) return;
+
+    try {
+      await this.boardService.addCollaborator(board.id, email, 'editor');
+      alert(`✅ ${email} added as collaborator!`);
+    } catch (error: any) {
+      alert(`❌ Failed to add collaborator: ${error.message}`);
+    }
+  }
+
+  async handleColumnMenu(columnId: string): Promise<void> {
+    if (confirm('Are you sure you want to delete this column and all its cards?')) {
+      await this.kanbanService.deleteColumn(columnId);
+    }
+  }
+
+  async handleAddCard(columnId: string, cardTitle: string): Promise<void> {
+    await this.kanbanService.addCard(columnId, cardTitle);
+  }
+
+  handleCardClick(cardId: string): void {
     this.selectedCardId.set(cardId);
   }
 
-  handleAddColumn(columnTitle: string): void {
-    this.kanbanService.addColumn(columnTitle);
+  async handleAddColumn(columnTitle: string): Promise<void> {
+    const boardId = this.boardService.currentBoardId();
+    if (!boardId) return;
+
+    await this.kanbanService.addColumn(boardId, columnTitle);
   }
 
-  handleCardDrop(event: {
+  async handleCardDrop(event: {
     previousColumnId: string;
     currentColumnId: string;
     previousIndex: number;
     currentIndex: number;
-  }): void {
-    this.kanbanService.moveCard(event);
+  }): Promise<void> {
+    await this.kanbanService.moveCard(event);
   }
 
   async handleLogin(): Promise<void> {
     try {
       await this.authService.signInWithGoogle();
+      // Проекты загрузятся автоматически через callback и effect
     } catch (error) {
       console.error('Login failed:', error);
     }
@@ -105,6 +178,7 @@ export class App {
   async handleLogout(): Promise<void> {
     try {
       await this.authService.signOut();
+      // Данные очистятся автоматически через effect
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -112,6 +186,5 @@ export class App {
 
   closeModal(): void {
     this.selectedCardId.set(null);
-    this.selectedColumnId.set(null);
   }
 }

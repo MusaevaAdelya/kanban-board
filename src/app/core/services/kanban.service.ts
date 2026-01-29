@@ -1,4 +1,21 @@
-import { Injectable, signal } from '@angular/core';
+// core/services/kanban.service.ts
+import { Injectable, inject, signal, computed, Injector, runInInjectionContext } from '@angular/core';
+import {
+  Firestore,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  writeBatch,
+  Timestamp,
+  onSnapshot,
+  Unsubscribe
+} from '@angular/fire/firestore';
 import {
   BoardColumn,
   KanbanCard,
@@ -7,247 +24,372 @@ import {
   Comment,
   Attachment,
 } from '../models/kanban.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class KanbanService {
-  private columns = signal<BoardColumn[]>([
-    {
-      id: '1',
-      title: 'To Do',
-      color: 'bg-scarlet-rush',
-      cards: [
-        {
-          id: '1',
-          title: 'Design Notification Banner',
-          description: '',
-          labels: [
-            { id: '1', name: 'Design', color: '#F197FF' },
-            { id: '2', name: 'Research', color: '#BC98FD' },
-          ],
-          assignee: {
-            photoURL: 'https://i.pravatar.cc/150?img=1',
-            displayName: 'Alice',
-          },
-          commentsCount: 0,
-          attachmentsCount: 0,
-          comments: [],
-          attachments: [],
-        },
-      ],
-    },
-    {
-      id: '2',
-      title: 'In Progress',
-      color: 'bg-scarlet-rush',
-      cards: [],
-    },
-    {
-      id: '3',
-      title: 'Done',
-      color: 'bg-scarlet-rush',
-      cards: [],
-    },
-  ]);
+  private firestore = inject(Firestore);
+  private authService = inject(AuthService);
+  private injector = inject(Injector);
 
-  private availableLabels = signal<Label[]>([
-    { id: '1', name: 'Enhancement', color: '#FFD700' },
-    { id: '2', name: 'Paperwork', color: '#FFA500' },
-    { id: '3', name: 'Bug', color: '#FF6B6B' },
-    { id: '4', name: 'Frontend', color: '#DA70D6' },
-    { id: '5', name: 'Backend', color: '#9ACD32' },
-  ]);
+  private columns = signal<BoardColumn[]>([]);
+  private cards = signal<KanbanCard[]>([]);
+  private availableLabels = signal<Label[]>([]);
+  private currentBoardId = signal<string | null>(null);
+  private unsubscribe: Unsubscribe | null = null;
 
   readonly allColumns = this.columns.asReadonly();
   readonly allLabels = this.availableLabels.asReadonly();
 
-  getCard(columnId: string, cardId: string): KanbanCard | undefined {
-    const column = this.columns().find((col) => col.id === columnId);
-    return column?.cards.find((card) => card.id === cardId);
+  // Computed: cards grouped by column
+  readonly columnsWithCards = computed(() => {
+    const cols = this.columns();
+    const allCards = this.cards();
+    
+    return cols.map(col => ({
+      ...col,
+      cards: allCards
+        .filter(card => card.columnId === col.id)
+        .sort((a, b) => a.order - b.order)
+    }));
+  });
+
+  async loadBoard(boardId: string): Promise<void> {
+    // Unsubscribe from previous board
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
+
+    this.currentBoardId.set(boardId);
+
+    try {
+      // Load columns with injection context
+      const columnsRef = collection(this.firestore, 'columns');
+      const columnsQuery = query(
+        columnsRef,
+        where('boardId', '==', boardId),
+        orderBy('order', 'asc')
+      );
+
+      runInInjectionContext(this.injector, () => {
+        this.unsubscribe = onSnapshot(columnsQuery, (snapshot) => {
+          const loadedColumns: BoardColumn[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            loadedColumns.push({
+              id: doc.id,
+              ...data,
+              createdAt: data['createdAt']?.toDate(),
+              updatedAt: data['updatedAt']?.toDate(),
+            } as BoardColumn);
+          });
+          this.columns.set(loadedColumns);
+        });
+      });
+
+      // Load cards
+      const cardsRef = collection(this.firestore, 'cards');
+      const cardsQuery = query(
+        cardsRef,
+        where('boardId', '==', boardId),
+        orderBy('order', 'asc')
+      );
+
+      runInInjectionContext(this.injector, () => {
+        onSnapshot(cardsQuery, (snapshot) => {
+          const loadedCards: KanbanCard[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            loadedCards.push({
+              id: doc.id,
+              ...data,
+              createdAt: data['createdAt']?.toDate(),
+              updatedAt: data['updatedAt']?.toDate(),
+              comments: data['comments']?.map((c: any) => ({
+                ...c,
+                createdAt: c.createdAt?.toDate()
+              })) || [],
+              attachments: data['attachments']?.map((a: any) => ({
+                ...a,
+                addedAt: a.addedAt?.toDate()
+              })) || []
+            } as KanbanCard);
+          });
+          this.cards.set(loadedCards);
+        });
+      });
+
+      // Load labels
+      const labelsRef = collection(this.firestore, 'labels');
+      const labelsQuery = query(labelsRef, where('boardId', '==', boardId));
+
+      runInInjectionContext(this.injector, () => {
+        onSnapshot(labelsQuery, (snapshot) => {
+          const loadedLabels: Label[] = [];
+          snapshot.forEach((doc) => {
+            loadedLabels.push({ id: doc.id, ...doc.data() } as Label);
+          });
+          this.availableLabels.set(loadedLabels);
+        });
+      });
+    } catch (error) {
+      console.error('Error loading board:', error);
+    }
   }
 
-  updateCard(columnId: string, cardId: string, updates: Partial<KanbanCard>): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
+  async addColumn(boardId: string, title: string): Promise<void> {
+    const currentColumns = this.columns();
+    const maxOrder = currentColumns.length > 0 
+      ? Math.max(...currentColumns.map(c => c.order)) 
+      : -1;
 
-    if (columnIndex === -1) return;
-
-    const updatedColumns = [...columns];
-    const cardIndex = updatedColumns[columnIndex].cards.findIndex((card) => card.id === cardId);
-
-    if (cardIndex === -1) return;
-
-    updatedColumns[columnIndex].cards[cardIndex] = {
-      ...updatedColumns[columnIndex].cards[cardIndex],
-      ...updates,
+    const newColumn: Omit<BoardColumn, 'id'> = {
+      boardId,
+      title: title || 'New Column',
+      color: 'bg-scarlet-rush',
+      order: maxOrder + 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    this.columns.set(updatedColumns);
+    try {
+      await addDoc(collection(this.firestore, 'columns'), {
+        ...newColumn,
+        createdAt: Timestamp.fromDate(newColumn.createdAt),
+        updatedAt: Timestamp.fromDate(newColumn.updatedAt),
+      });
+    } catch (error) {
+      console.error('Error adding column:', error);
+    }
   }
 
-  addComment(columnId: string, cardId: string, comment: Comment): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
+  async deleteColumn(columnId: string): Promise<void> {
+    try {
+      const batch = writeBatch(this.firestore);
 
-    if (columnIndex === -1) return;
+      // Delete all cards in this column
+      const cardsToDelete = this.cards().filter(c => c.columnId === columnId);
+      cardsToDelete.forEach(card => {
+        batch.delete(doc(this.firestore, 'cards', card.id));
+      });
 
-    const updatedColumns = [...columns];
-    const cardIndex = updatedColumns[columnIndex].cards.findIndex((card) => card.id === cardId);
+      // Delete column
+      batch.delete(doc(this.firestore, 'columns', columnId));
 
-    if (cardIndex === -1) return;
-
-    const card = updatedColumns[columnIndex].cards[cardIndex];
-    updatedColumns[columnIndex].cards[cardIndex] = {
-      ...card,
-      comments: [...(card.comments || []), comment],
-      commentsCount: (card.commentsCount || 0) + 1,
-    };
-
-    this.columns.set(updatedColumns);
+      await batch.commit();
+    } catch (error) {
+      console.error('Error deleting column:', error);
+    }
   }
 
-  addAttachment(columnId: string, cardId: string, attachment: Attachment): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
+  async addCard(columnId: string, title: string): Promise<void> {
+    const boardId = this.currentBoardId();
+    if (!boardId) return;
 
-    if (columnIndex === -1) return;
+    const columnCards = this.cards().filter(c => c.columnId === columnId);
+    const maxOrder = columnCards.length > 0
+      ? Math.max(...columnCards.map(c => c.order))
+      : -1;
 
-    const updatedColumns = [...columns];
-    const cardIndex = updatedColumns[columnIndex].cards.findIndex((card) => card.id === cardId);
-
-    if (cardIndex === -1) return;
-
-    const card = updatedColumns[columnIndex].cards[cardIndex];
-    updatedColumns[columnIndex].cards[cardIndex] = {
-      ...card,
-      attachments: [...(card.attachments || []), attachment],
-      attachmentsCount: (card.attachmentsCount || 0) + 1,
-    };
-
-    this.columns.set(updatedColumns);
-  }
-
-  deleteAttachment(columnId: string, cardId: string, attachmentId: string): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
-
-    if (columnIndex === -1) return;
-
-    const updatedColumns = [...columns];
-    const cardIndex = updatedColumns[columnIndex].cards.findIndex((card) => card.id === cardId);
-
-    if (cardIndex === -1) return;
-
-    const card = updatedColumns[columnIndex].cards[cardIndex];
-    updatedColumns[columnIndex].cards[cardIndex] = {
-      ...card,
-      attachments: (card.attachments || []).filter((att) => att.id !== attachmentId),
-      attachmentsCount: Math.max(0, (card.attachmentsCount || 0) - 1),
-    };
-
-    this.columns.set(updatedColumns);
-  }
-
-  addLabel(label: Omit<Label, 'id'>): void {
-    const newLabel: Label = {
-      ...label,
-      id: `label-${Date.now()}`,
-    };
-    this.availableLabels.update((labels) => [...labels, newLabel]);
-  }
-
-  toggleCardLabel(columnId: string, cardId: string, label: Label): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
-
-    if (columnIndex === -1) return;
-
-    const updatedColumns = [...columns];
-    const cardIndex = updatedColumns[columnIndex].cards.findIndex((card) => card.id === cardId);
-
-    if (cardIndex === -1) return;
-
-    const card = updatedColumns[columnIndex].cards[cardIndex];
-    const hasLabel = card.labels.some((l) => l.id === label.id);
-
-    updatedColumns[columnIndex].cards[cardIndex] = {
-      ...card,
-      labels: hasLabel ? card.labels.filter((l) => l.id !== label.id) : [...card.labels, label],
-    };
-
-    this.columns.set(updatedColumns);
-  }
-
-  addCard(columnId: string, cardTitle: string): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
-
-    if (columnIndex === -1) return;
-
-    const newCard: KanbanCard = {
-      id: `card-${Date.now()}`,
-      title: cardTitle,
+    const newCard: Omit<KanbanCard, 'id'> = {
+      boardId,
+      columnId,
+      title,
       description: '',
       labels: [],
+      order: maxOrder + 1,
       commentsCount: 0,
       attachmentsCount: 0,
       comments: [],
       attachments: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const updatedColumns = [...columns];
-    updatedColumns[columnIndex] = {
-      ...updatedColumns[columnIndex],
-      cards: [...updatedColumns[columnIndex].cards, newCard],
-    };
-
-    this.columns.set(updatedColumns);
+    try {
+      await addDoc(collection(this.firestore, 'cards'), {
+        ...newCard,
+        createdAt: Timestamp.fromDate(newCard.createdAt),
+        updatedAt: Timestamp.fromDate(newCard.updatedAt),
+      });
+    } catch (error) {
+      console.error('Error adding card:', error);
+    }
   }
 
-  addColumn(title: string): void {
-    const newColumn: BoardColumn = {
-      id: `column-${Date.now()}`,
-      title: title || 'New Column',
-      color: 'bg-scarlet-rush',
-      cards: [],
-    };
-
-    this.columns.update((columns) => [...columns, newColumn]);
+  async deleteCard(cardId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(this.firestore, 'cards', cardId));
+    } catch (error) {
+      console.error('Error deleting card:', error);
+    }
   }
 
-  moveCard(event: CardDropEvent): void {
-    const columns = this.columns();
-    const previousColumnIndex = columns.findIndex((col) => col.id === event.previousColumnId);
-    const currentColumnIndex = columns.findIndex((col) => col.id === event.currentColumnId);
+  async moveCard(event: CardDropEvent): Promise<void> {
+    const allCards = this.cards();
+    const movedCard = allCards.find(
+      c => c.columnId === event.previousColumnId && c.order === event.previousIndex
+    );
 
-    if (previousColumnIndex === -1 || currentColumnIndex === -1) return;
+    if (!movedCard) return;
 
-    const updatedColumns = [...columns];
-    const [movedCard] = updatedColumns[previousColumnIndex].cards.splice(event.previousIndex, 1);
-    updatedColumns[currentColumnIndex].cards.splice(event.currentIndex, 0, movedCard);
+    try {
+      const batch = writeBatch(this.firestore);
 
-    this.columns.set(updatedColumns);
+      // Update moved card
+      const movedCardRef = doc(this.firestore, 'cards', movedCard.id);
+      batch.update(movedCardRef, {
+        columnId: event.currentColumnId,
+        order: event.currentIndex,
+        updatedAt: Timestamp.now()
+      });
+
+      // Reorder cards in previous column
+      const previousColumnCards = allCards
+        .filter(c => c.columnId === event.previousColumnId && c.id !== movedCard.id)
+        .sort((a, b) => a.order - b.order);
+
+      previousColumnCards.forEach((card, index) => {
+        if (card.order !== index) {
+          batch.update(doc(this.firestore, 'cards', card.id), {
+            order: index,
+            updatedAt: Timestamp.now()
+          });
+        }
+      });
+
+      // Reorder cards in current column
+      const currentColumnCards = allCards
+        .filter(c => 
+          c.columnId === event.currentColumnId && 
+          c.id !== movedCard.id
+        )
+        .sort((a, b) => a.order - b.order);
+
+      currentColumnCards.splice(event.currentIndex, 0, movedCard);
+      currentColumnCards.forEach((card, index) => {
+        if (card.order !== index) {
+          batch.update(doc(this.firestore, 'cards', card.id), {
+            order: index,
+            updatedAt: Timestamp.now()
+          });
+        }
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.error('Error moving card:', error);
+    }
   }
 
-  deleteColumn(columnId: string): void {
-    const columns = this.columns();
-    const updatedColumns = columns.filter((col) => col.id !== columnId);
-    this.columns.set(updatedColumns);
+  getCard(cardId: string): KanbanCard | undefined {
+    return this.cards().find(c => c.id === cardId);
   }
 
-  deleteCard(columnId: string, cardId: string): void {
-    const columns = this.columns();
-    const columnIndex = columns.findIndex((col) => col.id === columnId);
+  async updateCard(cardId: string, updates: Partial<KanbanCard>): Promise<void> {
+    try {
+      await updateDoc(doc(this.firestore, 'cards', cardId), {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating card:', error);
+    }
+  }
 
-    if (columnIndex === -1) return;
+  async addComment(cardId: string, comment: Comment): Promise<void> {
+    const card = this.getCard(cardId);
+    if (!card) return;
 
-    const updatedColumns = [...columns];
-    updatedColumns[columnIndex] = {
-      ...updatedColumns[columnIndex],
-      cards: updatedColumns[columnIndex].cards.filter((card) => card.id !== cardId),
-    };
+    const updatedComments = [...(card.comments || []), comment];
 
-    this.columns.set(updatedColumns);
+    try {
+      await updateDoc(doc(this.firestore, 'cards', cardId), {
+        comments: updatedComments.map(c => ({
+          ...c,
+          createdAt: Timestamp.fromDate(c.createdAt)
+        })),
+        commentsCount: updatedComments.length,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  }
+
+  async addAttachment(cardId: string, attachment: Attachment): Promise<void> {
+    const card = this.getCard(cardId);
+    if (!card) return;
+
+    const updatedAttachments = [...(card.attachments || []), attachment];
+
+    try {
+      await updateDoc(doc(this.firestore, 'cards', cardId), {
+        attachments: updatedAttachments.map(a => ({
+          ...a,
+          addedAt: Timestamp.fromDate(a.addedAt)
+        })),
+        attachmentsCount: updatedAttachments.length,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error adding attachment:', error);
+    }
+  }
+
+  async deleteAttachment(cardId: string, attachmentId: string): Promise<void> {
+    const card = this.getCard(cardId);
+    if (!card) return;
+
+    const updatedAttachments = (card.attachments || []).filter(a => a.id !== attachmentId);
+
+    try {
+      await updateDoc(doc(this.firestore, 'cards', cardId), {
+        attachments: updatedAttachments.map(a => ({
+          ...a,
+          addedAt: Timestamp.fromDate(a.addedAt)
+        })),
+        attachmentsCount: updatedAttachments.length,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+    }
+  }
+
+  async addLabel(boardId: string, label: Omit<Label, 'id'>): Promise<void> {
+    try {
+      await addDoc(collection(this.firestore, 'labels'), {
+        ...label,
+        boardId
+      });
+    } catch (error) {
+      console.error('Error adding label:', error);
+    }
+  }
+
+  async toggleCardLabel(cardId: string, label: Label): Promise<void> {
+    const card = this.getCard(cardId);
+    if (!card) return;
+
+    const hasLabel = card.labels.some(l => l.id === label.id);
+    const updatedLabels = hasLabel
+      ? card.labels.filter(l => l.id !== label.id)
+      : [...card.labels, label];
+
+    await this.updateCard(cardId, { labels: updatedLabels });
+  }
+
+  cleanup(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    this.columns.set([]);
+    this.cards.set([]);
+    this.availableLabels.set([]);
+    this.currentBoardId.set(null);
   }
 }

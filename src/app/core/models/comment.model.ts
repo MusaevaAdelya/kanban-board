@@ -5,6 +5,5 @@ export interface Comment {
   userEmail: string;
   userDisplayName: string;
   text: string;
-  isTestData: boolean;
   createdAt: Date;
 }

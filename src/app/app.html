@@ -1,28 +1,35 @@
-<main class="p-4 md:p-10 w-full ">
-  <div class="min-h-[80vh] flex flex-col lg:grid lg:grid-cols-[20rem_1fr] gap-4 md:gap-8 w-full">
+<main class="min-h-screen p-4 md:p-10 w-full">
+  <div class="h-full flex flex-col lg:grid lg:grid-cols-[20rem_1fr] gap-4 md:gap-8 w-full">
     <!-- Mobile Menu Toggle -->
+    @if (authService.currentUser()) {
     <button
-      class="lg:hidden fixed top-4 left-4 z-50 bg-scarlet-rush border-2 border-secondary rounded-full p-3 flex items-center"
+      class="lg:hidden fixed top-4 left-4 z-50 bg-accent border-2 border-secondary rounded-full p-3 shadow-[3px_3px_0_0_var(--color-secondary)]"
       (click)="toggleMobileSidebar()"
     >
-      <ng-icon [name]="isMobileSidebarOpen() ? 'heroXMark' : 'heroBars3'" size="1.5rem"></ng-icon>
+      <ng-icon
+        [name]="isMobileSidebarOpen() ? 'heroXMark' : 'heroBars3'"
+        size="1.5rem"
+      ></ng-icon>
     </button>
+    }
 
-    <!-- Sidebar - скрыт на мобильных, показывается через оверлей -->
+    <!-- Sidebar -->
     <div
-      [class]="'fixed lg:relative inset-0 z-40 transition-transform duration-300 lg:translate-x-0 ' + (isMobileSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
+      [class]="
+        'fixed lg:relative inset-0 z-40 transition-transform duration-300 lg:translate-x-0 ' +
+        (isMobileSidebarOpen() ? 'translate-x-0' : '-translate-x-full')
+      "
     >
-      <!-- Overlay для мобильных -->
       <div
         class="lg:hidden fixed inset-0 bg-black/50"
         (click)="toggleMobileSidebar()"
         [class.hidden]="!isMobileSidebarOpen()"
       ></div>
 
-      <!-- Sidebar контент -->
-      <div class="relative h-full w-80 lg:w-full bg-primary lg:bg-transparent p-4 lg:p-0 overflow-y-auto">
+      <div
+        class="relative h-full w-80 lg:w-full bg-primary lg:bg-transparent p-4 lg:p-0 overflow-y-auto"
+      >
         <app-sidebar
-          (generateTestDataClicked)="generateTestData()"
           (login)="handleLogin()"
           (logout)="handleLogout()"
         />
@@ -30,56 +37,66 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex flex-col gap-4 md:gap-6 w-full min-w-0 mt-16 lg:mt-0 min-h-[75vh]">
-      @if (selectedProject(); as project) {
+    <div class="flex flex-col gap-4 md:gap-6 w-full min-w-0" [class.mt-16]="authService.currentUser()" [class.lg:mt-0]="authService.currentUser()">
+      @if (isLoadingProjects()) {
+      <div class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto mb-4"></div>
+          <p class="text-text-secondary">Loading projects...</p>
+        </div>
+      </div>
+      } @else if (selectedProject(); as project) {
+      <div
+        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] px-4 md:px-8 py-4 md:py-6 flex flex-col min-h-0 h-full"
+      >
+        <app-board-header
+          [title]="project.title"
+          [owner]="project.owner"
+          [collaborators]="collaborators()"
+          (inviteClicked)="handleInvite()"
+        />
+
         <div
-          class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] px-4 md:px-8 py-4 md:py-6 flex flex-col min-h-0 h-full"
+          class="flex gap-4 md:gap-6 mt-4 md:mt-6 overflow-x-auto min-w-0 pb-6 md:pb-10 columns-container h-full"
+          appDragScroll
+          cdkDropListGroup
         >
-          <app-board-header
-            [title]="project.title"
-            [owner]="project.owner"
-            [collaborators]="mockCollaborators()"
-            (inviteClicked)="handleInvite()"
+          @for (column of columnsWithCards(); track column.id) {
+          <app-column
+            [columnId]="column.id"
+            [title]="column.title"
+            [color]="column.color"
+            [cards]="column.cards"
+            (menuClicked)="handleColumnMenu(column.id)"
+            (addCard)="handleAddCard(column.id, $event)"
+            (cardClicked)="handleCardClick($event)"
+            (cardDropped)="handleCardDrop($event)"
           />
+          }
 
-          <div
-            class="flex min-h-[70vh] gap-4 md:gap-6 mt-4 md:mt-6 overflow-x-auto min-w-0 pb-6 md:pb-10 columns-container h-full"
-            appDragScroll
-            cdkDropListGroup
-          >
-            @for (column of mockColumns(); track column.id) {
-              <app-column
-                [columnId]="column.id"
-                [title]="column.title"
-                [color]="column.color"
-                [cards]="column.cards"
-                (menuClicked)="handleColumnMenu(column.id)"
-                (addCard)="handleAddCard(column.id, $event)"
-                (cardClicked)="handleCardClick(column.id, $event)"
-                (cardDropped)="handleCardDrop($event)"
-              />
-            }
-
-            <!-- Add Column Button -->
-            <app-add-column-button (clicked)="handleAddColumn($event)" />
-          </div>
+          <app-add-column-button (clicked)="handleAddColumn($event)" />
         </div>
+      </div>
       } @else {
-        <div
-          class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center"
-        >
-          <p class="text-text-secondary text-lg md:text-xl text-center">Select a project to get started</p>
+      <div
+        class="bg-primary border-2 border-secondary rounded-lg shadow-[5px_5px_0_0_var(--color-shadow)] md:shadow-[7px_7px_0_0_var(--color-shadow)] p-4 md:p-6 flex-1 flex items-center justify-center"
+      >
+        <div class="text-center">
+          <p class="text-text-secondary text-lg md:text-xl mb-4">
+            @if (!authService.currentUser()) {
+              Please login to create and manage projects
+            } @else {
+              Select a project or create a new one to get started
+            }
+          </p>
         </div>
+      </div>
       }
     </div>
 
     <!-- Card Modal -->
-    @if (selectedCardId() && selectedColumnId()) {
-      <app-card-modal
-        [columnId]="selectedColumnId()!"
-        [cardId]="selectedCardId()!"
-        (closed)="closeModal()"
-      />
+    @if (selectedCardId()) {
+    <app-card-modal [cardId]="selectedCardId()!" (closed)="closeModal()" />
     }
   </div>
 </main>

@@ -1,5 +1,7 @@
+// core/services/project.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { AuthService } from './auth.service';
+import { BoardService } from './board.service';
+import { KanbanService } from './kanban.service';
 
 export interface Project {
   id: string;
@@ -11,65 +13,60 @@ export interface Project {
   providedIn: 'root',
 })
 export class ProjectService {
-  private authService = inject(AuthService);
-
-  private projects = signal<Project[]>([
-    { id: '1', title: 'Health Web App', owner: 'Adelya Musaeva' },
-    { id: '2', title: 'Education Web App', owner: 'Adelya Musaeva' },
-    { id: '3', title: 'Finance Mobile App', owner: 'Adelya Musaeva' },
-  ]);
-
-  private selectedProjectId = signal<string | null>('1');
+  private boardService = inject(BoardService);
+  private kanbanService = inject(KanbanService);
 
   isMobileSidebarOpen = signal(false);
 
   toggleMobileSidebar(): void {
-    this.isMobileSidebarOpen.update(value => !value);
+    this.isMobileSidebarOpen.update((value) => !value);
   }
 
-  readonly allProjects = this.projects.asReadonly();
-  readonly currentProjectId = this.selectedProjectId.asReadonly();
-
-  readonly selectedProject = computed(() => {
-    const projectId = this.selectedProjectId();
-    return this.projects().find((p) => p.id === projectId);
+  // Proxy to BoardService
+  readonly allProjects = computed(() => {
+    return this.boardService.allBoards().map(board => ({
+      id: board.id,
+      title: board.title,
+      owner: board.ownerDisplayName || board.ownerEmail
+    }));
   });
 
-  selectProject(projectId: string): void {
-    this.selectedProjectId.set(projectId);
+  readonly currentProjectId = this.boardService.currentBoardId;
+
+  readonly selectedProject = computed(() => {
+    const board = this.boardService.selectedBoard();
+    if (!board) return null;
+    return {
+      id: board.id,
+      title: board.title,
+      owner: board.ownerDisplayName || board.ownerEmail,
+      collaborators: board.collaborators
+    };
+  });
+
+  async selectProject(projectId: string): Promise<void> {
+    this.boardService.selectBoard(projectId);
+    await this.kanbanService.loadBoard(projectId);
     this.isMobileSidebarOpen.set(false);
   }
 
-  addProject(title: string): void {
-    const user = this.authService.currentUser();
-    
-    if (!user) {
-      console.warn('User must be logged in to add projects');
-      return;
+  async addProject(title: string): Promise<void> {
+    const boardId = await this.boardService.createBoard(title);
+    if (boardId) {
+      // Доска уже выбрана и загружена в createBoard
+      await this.kanbanService.loadBoard(boardId);
     }
-
-    const newProject: Project = {
-      id: `project-${Date.now()}`,
-      title,
-      owner: user.displayName || user.email || 'Unknown User',
-    };
-
-    this.projects.update((projects) => [...projects, newProject]);
-    this.selectedProjectId.set(newProject.id);
   }
 
-  deleteProject(projectId: string): void {
-    const projects = this.projects();
-    const updatedProjects = projects.filter((p) => p.id !== projectId);
-    this.projects.set(updatedProjects);
-
-    // Если удален выбранный проект, выбираем первый доступный
-    if (this.selectedProjectId() === projectId) {
-      this.selectedProjectId.set(updatedProjects[0]?.id || null);
-    }
+  async deleteProject(projectId: string): Promise<void> {
+    await this.boardService.deleteBoard(projectId);
   }
 
   isProjectSelected(projectId: string): boolean {
-    return this.selectedProjectId() === projectId;
+    return this.boardService.currentBoardId() === projectId;
+  }
+
+  async loadProjects(): Promise<void> {
+    await this.boardService.loadBoards();
   }
 }

@@ -26,11 +26,6 @@ export const boardAccessGuard: CanActivateFn = async (route, state) => {
     const board = boardDoc.data() as Board;
     const currentUser = authService.currentUser();
 
-    // Allow access if test data or user is owner/collaborator
-    if (board.isTestData) {
-      return true;
-    }
-
     if (!currentUser) {
       router.navigate(['/auth/login']);
       return false;

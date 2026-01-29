@@ -5,6 +5,5 @@ export interface Attachment {
   fileName: string;
   fileUrl: string; // Cloudinary URL
   fileType: string;
-  isTestData: boolean;
   createdAt: Date;
 }

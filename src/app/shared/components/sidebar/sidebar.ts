@@ -37,27 +37,26 @@ export class Sidebar {
   currentUser = this.authService.currentUser;
   isLoggedIn = computed(() => this.currentUser() !== null);
 
-  generateTestDataClicked = output<void>();
   login = output<void>();
   logout = output<void>();
 
-  selectProject(projectId: string): void {
-    this.projectService.selectProject(projectId);
+  async selectProject(projectId: string): Promise<void> {
+    await this.projectService.selectProject(projectId);
   }
 
   addProject(): void {
     if (!this.isLoggedIn()) {
-      console.log('Please login to add projects');
+      alert('Please login to add projects');
       return;
     }
     this.isAddingProject.set(true);
   }
 
-  handleAddProject(): void {
+  async handleAddProject(): Promise<void> {
     const title = this.newProjectTitle().trim();
 
     if (title) {
-      this.projectService.addProject(title);
+      await this.projectService.addProject(title);
       this.newProjectTitle.set('');
       this.isAddingProject.set(false);
     }
@@ -72,15 +71,19 @@ export class Sidebar {
     return this.projectService.isProjectSelected(projectId);
   }
 
-  handleGenerateTestData(): void {
-    this.generateTestDataClicked.emit();
-  }
-
   handleLogin(): void {
     this.login.emit();
   }
 
   handleLogout(): void {
     this.logout.emit();
+  }
+
+  async deleteProject(projectId: string, event: Event): Promise<void> {
+    event.stopPropagation();
+    
+    if (confirm('Are you sure you want to delete this project? This will also delete all columns and cards.')) {
+      await this.projectService.deleteProject(projectId);
+    }
   }
 }

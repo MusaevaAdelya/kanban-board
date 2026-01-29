@@ -3,6 +3,5 @@ export interface Column {
   boardId: string;
   title: string;
   order: number;
-  isTestData: boolean;
   createdAt: Date;
 }
