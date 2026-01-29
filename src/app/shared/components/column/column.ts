@@ -95,8 +95,6 @@ export class Column {
   }
 
   async handleDeleteCard(cardId: string) {
-    if (confirm('Are you sure you want to delete this card?')) {
-      await this.kanbanService.deleteCard(cardId);
-    }
+    await this.kanbanService.deleteCard(cardId);
   }
 }

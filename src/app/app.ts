@@ -38,7 +38,7 @@ import { computed, effect } from '@angular/core';
   providers: [provideIcons({ heroPlus, heroBars3, heroXMark })],
 })
 export class App implements OnInit, OnDestroy {
-  protected authService = inject(AuthService);
+  authService = inject(AuthService);
   private kanbanService = inject(KanbanService);
   private projectService = inject(ProjectService);
   private boardService = inject(BoardService);
@@ -53,28 +53,35 @@ export class App implements OnInit, OnDestroy {
 
   selectedCardId = signal<string | null>(null);
 
-  // Reference to modal for resetting form
   addCollaboratorModal = viewChild(AddCollaboratorModal);
+
+  // Computed: проверяем является ли текущий пользователь owner'ом
+  isCurrentUserOwner = computed(() => {
+    const board = this.boardService.selectedBoard();
+    const user = this.authService.currentUser();
+
+    if (!board || !user) return false;
+
+    return board.ownerId === user.uid;
+  });
 
   // Computed collaborators from selected board
   collaborators = computed(() => {
     const board = this.boardService.selectedBoard();
     if (!board) return [];
-    
-    return board.collaborators.map(c => ({
+
+    return board.collaborators.map((c) => ({
       id: c.userId,
       photoURL: c.photoURL || 'https://i.pravatar.cc/150?img=0',
-      displayName: c.displayName || c.email.split('@')[0]
+      displayName: c.displayName || c.email.split('@')[0],
     }));
   });
 
   constructor() {
-    // Настраиваем callback для загрузки проектов после логина
     this.authService.setOnLoginCallback(async () => {
       await this.loadProjectsAndBoard();
     });
 
-    // Отслеживаем изменения currentUser
     effect(async () => {
       const user = this.authService.currentUser();
       if (user) {
@@ -100,7 +107,7 @@ export class App implements OnInit, OnDestroy {
     this.isLoadingProjects.set(true);
     try {
       await this.projectService.loadProjects();
-      
+
       const selectedBoardId = this.boardService.currentBoardId();
       if (selectedBoardId) {
         await this.kanbanService.loadBoard(selectedBoardId);
@@ -152,11 +159,28 @@ export class App implements OnInit, OnDestroy {
     this.addCollaboratorModal()?.resetForm();
   }
 
-  async handleColumnMenu(columnId: string): Promise<void> {
-    if (confirm('Are you sure you want to delete this column and all its cards?')) {
-      await this.kanbanService.deleteColumn(columnId);
-      this.toastService.success('Column deleted successfully');
+  async handleDeleteProject(): Promise<void> {
+    const board = this.boardService.selectedBoard();
+    if (!board) return;
+
+    // Двойная проверка на owner
+    if (board.ownerId !== this.authService.currentUser()?.uid) {
+      this.toastService.error('Only the project owner can delete this project');
+      return;
     }
+
+    try {
+      await this.projectService.deleteProject(board.id);
+      this.toastService.success('Project deleted successfully');
+    } catch (error: any) {
+      this.toastService.error('Failed to delete project');
+      console.error('Error deleting project:', error);
+    }
+  }
+
+  async handleColumnMenu(columnId: string): Promise<void> {
+    await this.kanbanService.deleteColumn(columnId);
+    this.toastService.success('Column deleted successfully');
   }
 
   async handleAddCard(columnId: string, cardTitle: string): Promise<void> {

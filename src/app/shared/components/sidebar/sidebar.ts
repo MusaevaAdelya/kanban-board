@@ -78,12 +78,4 @@ export class Sidebar {
   handleLogout(): void {
     this.logout.emit();
   }
-
-  async deleteProject(projectId: string, event: Event): Promise<void> {
-    event.stopPropagation();
-    
-    if (confirm('Are you sure you want to delete this project? This will also delete all columns and cards.')) {
-      await this.projectService.deleteProject(projectId);
-    }
-  }
 }

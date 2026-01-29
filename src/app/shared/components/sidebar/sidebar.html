@@ -73,23 +73,11 @@
     }
 
     @for (project of projects(); track project.id) {
-    <div class="relative group">
-      <app-project-item
-        [title]="project.title"
-        [isSelected]="isProjectSelected(project.id)"
-        (projectClicked)="selectProject(project.id)"
-      />
-      <!-- Delete button -->
-      @if (isLoggedIn()) {
-      <button
-        class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-scarlet-rush text-white rounded-full p-1 hover:bg-red-600"
-        (click)="deleteProject(project.id, $event)"
-        title="Delete project"
-      >
-        <ng-icon name="heroXMark" size="1rem"></ng-icon>
-      </button>
-      }
-    </div>
+    <app-project-item
+      [title]="project.title"
+      [isSelected]="isProjectSelected(project.id)"
+      (projectClicked)="selectProject(project.id)"
+    />
     }
   </div>
 
