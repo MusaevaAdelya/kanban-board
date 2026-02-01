@@ -18,10 +18,10 @@
       class="flex flex-col gap-3 md:gap-4 pr-1 min-h-24"
       cdkDropList
       [id]="columnId()"
-      [cdkDropListData]="cards()"
+      [cdkDropListData]="localCards()"
       (cdkDropListDropped)="onDrop($event)"
     >
-      @for (card of cards(); track card.id) {
+      @for (card of localCards(); track card.id) {
         <div cdkDrag>
           <app-kanban-card
             [cardId]="card.id"
